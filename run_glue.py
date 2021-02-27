@@ -40,7 +40,7 @@ from transformers import (
     default_data_collator,
     set_seed,
 )
-from transformers.trainer_utils import get_last_checkpoint, is_main_process
+from transformers.trainer_utils import get_last_checkpoint
 
 task_to_keys = {
     "mnli": ("premise", "hypothesis"),
@@ -192,37 +192,24 @@ if __name__ == "__main__":
         datefmt="%m/%d/%Y %H:%M:%S",
         handlers=[logging.StreamHandler(sys.stdout)],
     )
-    logger.setLevel(
-        logging.INFO if is_main_process(training_args.local_rank) else logging.WARN
-    )
+    logger.setLevel(logging.INFO)
 
     # Log on each process the small summary:
     logger.warning(
-        f"Process rank: {training_args.local_rank}, device: {training_args.device}, n_gpu: {training_args.n_gpu}"
-        + f"distributed training: {bool(training_args.local_rank != -1)}, 16-bits training: {training_args.fp16}"
+        f"Device: {training_args.device}, n_gpu: {training_args.n_gpu}"
+        + f"16-bits training: {training_args.fp16}"
     )
-    # Set the verbosity to info of the Transformers logger (on main process only):
-    if is_main_process(training_args.local_rank):
-        transformers.utils.logging.set_verbosity_info()
-        transformers.utils.logging.enable_default_handler()
-        transformers.utils.logging.enable_explicit_format()
+    # Set the verbosity to info of the Transformers logger:
+    transformers.utils.logging.set_verbosity_info()
+    transformers.utils.logging.enable_default_handler()
+    transformers.utils.logging.enable_explicit_format()
     logger.info(f"Training/evaluation parameters {training_args}")
 
     # Set seed before initializing model.
     set_seed(training_args.seed)
 
-    # Get the datasets: you can either provide your own CSV/JSON training and evaluation files (see below)
-    # or specify a GLUE benchmark task (the dataset will be downloaded automatically from the datasets Hub).
-    #
-    # For CSV/JSON files, this script will use as labels the column called 'label' and as pair of sentences the
-    # sentences in columns called 'sentence1' and 'sentence2' if such column exists or the first two columns not named
-    # label if at least two columns are provided.
-    #
-    # If the CSVs/JSONs contain only one non-label column, the script does single sentence classification on this
-    # single column. You can easily tweak this behavior (see below)
-    #
-    # In distributed training, the load_dataset function guarantee that only one local process can concurrently
-    # download the dataset.
+    # Get the datasets: you can specify a GLUE benchmark task
+    # (the dataset will be downloaded automatically from the datasets Hub).
     # Downloading and loading a dataset from the hub.
     datasets = load_dataset("glue", data_args.task_name)
     # See more about loading any type of standard or custom dataset at
@@ -233,9 +220,6 @@ if __name__ == "__main__":
     num_labels = len(label_list)
 
     # Load pretrained model and tokenizer
-    #
-    # In distributed training, the .from_pretrained methods guarantee that only one local process can concurrently
-    # download model & vocab.
     config = AutoConfig.from_pretrained(
         model_args.config_name
         if model_args.config_name
@@ -299,13 +283,12 @@ if __name__ == "__main__":
 
     def preprocess_function(examples):
         # Tokenize the texts
-        args = (
-            (examples[sentence1_key],)
-            if sentence2_key is None
-            else (examples[sentence1_key], examples[sentence2_key])
-        )
         result = tokenizer(
-            *args, padding=padding, max_length=max_seq_length, truncation=True
+            examples[sentence1_key],
+            examples[sentence2_key],
+            padding=padding,
+            max_length=max_seq_length,
+            truncation=True,
         )
 
         # Map labels to IDs (not necessary for GLUE tasks)
@@ -379,17 +362,16 @@ if __name__ == "__main__":
         trainer.save_model()  # Saves the tokenizer too for easy upload
 
         output_train_file = os.path.join(training_args.output_dir, "train_results.txt")
-        if trainer.is_world_process_zero():
-            with open(output_train_file, "w") as writer:
-                logger.info("***** Train results *****")
-                for key, value in sorted(metrics.items()):
-                    logger.info(f"  {key} = {value}")
-                    writer.write(f"{key} = {value}\n")
+        with open(output_train_file, "w") as writer:
+            logger.info("***** Train results *****")
+            for key, value in sorted(metrics.items()):
+                logger.info(f"  {key} = {value}")
+                writer.write(f"{key} = {value}\n")
 
-            # Need to save the state, since Trainer.save_model saves only the tokenizer with the model
-            trainer.state.save_to_json(
-                os.path.join(training_args.output_dir, "trainer_state.json")
-            )
+        # Need to save the state, since Trainer.save_model saves only the tokenizer with the model
+        trainer.state.save_to_json(
+            os.path.join(training_args.output_dir, "trainer_state.json")
+        )
 
     # Evaluation
     eval_results = {}
@@ -409,12 +391,11 @@ if __name__ == "__main__":
             output_eval_file = os.path.join(
                 training_args.output_dir, f"eval_results_{task}.txt"
             )
-            if trainer.is_world_process_zero():
-                with open(output_eval_file, "w") as writer:
-                    logger.info(f"***** Eval results {task} *****")
-                    for key, value in sorted(eval_result.items()):
-                        logger.info(f"  {key} = {value}")
-                        writer.write(f"{key} = {value}\n")
+            with open(output_eval_file, "w") as writer:
+                logger.info(f"***** Eval results {task} *****")
+                for key, value in sorted(eval_result.items()):
+                    logger.info(f"  {key} = {value}")
+                    writer.write(f"{key} = {value}\n")
 
             eval_results.update(eval_result)
 
@@ -437,10 +418,9 @@ if __name__ == "__main__":
             output_test_file = os.path.join(
                 training_args.output_dir, f"test_results_{task}.txt"
             )
-            if trainer.is_world_process_zero():
-                with open(output_test_file, "w") as writer:
-                    logger.info(f"***** Test results {task} *****")
-                    writer.write("index\tprediction\n")
-                    for index, item in enumerate(predictions):
-                        item = label_list[item]
-                        writer.write(f"{index}\t{item}\n")
+            with open(output_test_file, "w") as writer:
+                logger.info(f"***** Test results {task} *****")
+                writer.write("index\tprediction\n")
+                for index, item in enumerate(predictions):
+                    item = label_list[item]
+                    writer.write(f"{index}\t{item}\n")
