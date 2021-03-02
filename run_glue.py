@@ -1,7 +1,5 @@
 #!/usr/bin/env python
 # coding=utf-8
-""" Finetuning the library models for sequence classification on GLUE."""
-# You can also adapt this script on your own text classification task. Pointers for this are left as comments.
 
 import logging
 import os
@@ -183,8 +181,7 @@ if __name__ == "__main__":
 
     # Log on each process the small summary:
     logger.warning(
-        f"Device: {training_args.device}, n_gpu: {training_args.n_gpu}"
-        + f"16-bits training: {training_args.fp16}"
+        f"Device: {training_args.device}" + f"16-bits training: {training_args.fp16}"
     )
     # Set the verbosity to info of the Transformers logger:
     transformers.utils.logging.set_verbosity_info()
@@ -361,7 +358,6 @@ if __name__ == "__main__":
         )
 
     # Evaluation
-    eval_results = {}
     if training_args.do_eval:
         logger.info("*** Evaluate ***")
 
@@ -383,8 +379,6 @@ if __name__ == "__main__":
                 for key, value in sorted(eval_result.items()):
                     logger.info(f"  {key} = {value}")
                     writer.write(f"{key} = {value}\n")
-
-            eval_results.update(eval_result)
 
     if training_args.do_predict:
         logger.info("*** Test ***")
