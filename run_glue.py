@@ -47,12 +47,11 @@ class DataTrainingArguments:
     the command line.
     """
 
-    task_name: Optional[str] = field(
-        default=None,
+    task_name: str = field(
         metadata={
             "help": "The name of the task to train on: "
             + ", ".join(task_to_keys.keys())
-        },
+        }
     )
     max_seq_length: int = field(
         default=128,
@@ -74,8 +73,6 @@ class DataTrainingArguments:
     )
 
     def __post_init__(self):
-        if self.task_name is None:
-            raise ValueError("Need a GLUE task.")
         self.task_name = self.task_name.lower()
         if self.task_name not in task_to_keys.keys():
             raise ValueError(
