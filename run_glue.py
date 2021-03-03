@@ -74,15 +74,13 @@ class DataTrainingArguments:
     )
 
     def __post_init__(self):
-        if self.task_name is not None:
-            self.task_name = self.task_name.lower()
-            if self.task_name not in task_to_keys.keys():
-                raise ValueError(
-                    "Unknown task, you should pick one in "
-                    + ",".join(task_to_keys.keys())
-                )
-        else:
+        if self.task_name is None:
             raise ValueError("Need a GLUE task.")
+        self.task_name = self.task_name.lower()
+        if self.task_name not in task_to_keys.keys():
+            raise ValueError(
+                "Unknown task, you should pick one in " + ",".join(task_to_keys.keys())
+            )
 
 
 @dataclass
