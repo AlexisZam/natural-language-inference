@@ -27,6 +27,9 @@ from transformers import (
 from transformers.trainer_utils import get_last_checkpoint
 
 task_to_keys = {
+    "anli_r1": ("premise", "hypothesis"),
+    "anli_r2": ("premise", "hypothesis"),
+    "anli_r3": ("premise", "hypothesis"),
     "mnli": ("premise", "hypothesis"),
     "qnli": ("question", "sentence"),
     "rte": ("sentence1", "sentence2"),
@@ -192,7 +195,9 @@ if __name__ == "__main__":
     # (the dataset will be downloaded automatically from the datasets Hub).
     # Downloading and loading a dataset from the hub.
     datasets = (
-        load_dataset(data_args.task_name, "tsv_format")
+        load_dataset("anli")
+        if data_args.task_name.startswith("anli")
+        else load_dataset(data_args.task_name, "tsv_format")
         if data_args.task_name == "scitail"
         else load_dataset(data_args.task_name)
         if data_args.task_name == "snli"
@@ -203,7 +208,9 @@ if __name__ == "__main__":
 
     # Labels
     label_list = (
-        ("entails", "neutral")
+        datasets["train_r1"].features["label"].names
+        if data_args.task_name.startswith("anli")
+        else ("entails", "neutral")
         if data_args.task_name == "scitail"
         else datasets["train"].features["label"].names
     )
@@ -306,11 +313,19 @@ if __name__ == "__main__":
             load_from_cache_file=not data_args.overwrite_cache,
         )
 
-    train_dataset = datasets["train"]
-    eval_dataset = datasets[
-        "validation_matched" if data_args.task_name == "mnli" else "validation"
-    ]
-    test_dataset = datasets["test_matched" if data_args.task_name == "mnli" else "test"]
+    if data_args.task_name.startswith("anli"):
+        round = data_args.task_name.split("_")[1]
+        train_dataset = datasets[f"train_{round}"]
+        eval_dataset = datasets[f"dev_{round}"]
+        test_dataset = datasets[f"test_{round}"]
+    else:
+        train_dataset = datasets["train"]
+        eval_dataset = datasets[
+            "validation_matched" if data_args.task_name == "mnli" else "validation"
+        ]
+        test_dataset = datasets[
+            "test_matched" if data_args.task_name == "mnli" else "test"
+        ]
 
     # Log a few random samples from the training set:
     for index in random.sample(range(len(train_dataset)), 3):
