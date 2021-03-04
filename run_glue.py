@@ -188,8 +188,7 @@ if __name__ == "__main__":
     # Set seed before initializing model.
     set_seed(training_args.seed)
 
-    # Get the datasets: you can specify a GLUE benchmark task
-    # (the dataset will be downloaded automatically from the datasets Hub).
+    # Get the datasets.
     # Downloading and loading a dataset from the hub.
     datasets = (
         load_dataset("anli")
@@ -200,8 +199,6 @@ if __name__ == "__main__":
         if data_args.task_name == "snli"
         else load_dataset("glue", data_args.task_name)
     )
-    # See more about loading any type of standard or custom dataset at
-    # https://huggingface.co/docs/datasets/loading_datasets.html.
 
     # Labels
     label_list = (
