@@ -26,17 +26,17 @@ from transformers import (
 )
 from transformers.trainer_utils import get_last_checkpoint
 
-task_to_keys = {
-    "anli_r1": ("premise", "hypothesis"),
-    "anli_r2": ("premise", "hypothesis"),
-    "anli_r3": ("premise", "hypothesis"),
-    "mnli": ("premise", "hypothesis"),
-    "qnli": ("question", "sentence"),
-    "rte": ("sentence1", "sentence2"),
-    "scitail": ("premise", "hypothesis"),
-    "snli": ("premise", "hypothesis"),
-    "wnli": ("sentence1", "sentence2"),
-}
+task_names = (
+    "anli_r1",
+    "anli_r2",
+    "anli_r3",
+    "mnli",
+    "qnli",
+    "rte",
+    "scitail",
+    "snli",
+    "wnli",
+)
 
 logger = logging.getLogger(__name__)
 
@@ -52,10 +52,7 @@ class DataTrainingArguments:
     """
 
     task_name: str = field(
-        metadata={
-            "help": "The name of the task to train on: "
-            + ", ".join(task_to_keys.keys())
-        }
+        metadata={"help": "The name of the task to train on: " + ", ".join(task_names)}
     )
     max_seq_length: int = field(
         default=128,
@@ -78,9 +75,9 @@ class DataTrainingArguments:
 
     def __post_init__(self):
         self.task_name = self.task_name.lower()
-        if self.task_name not in task_to_keys.keys():
+        if self.task_name not in task_names:
             raise ValueError(
-                "Unknown task, you should pick one in " + ",".join(task_to_keys.keys())
+                "Unknown task, you should pick one in " + ",".join(task_names)
             )
 
 
@@ -246,7 +243,13 @@ if __name__ == "__main__":
     )
 
     # Preprocessing the datasets
-    sentence1_key, sentence2_key = task_to_keys[data_args.task_name]
+    sentence1_key, sentence2_key = (
+        ("question", "sentence")
+        if data_args.task_name == "qnli"
+        else ("sentence1", "sentence2")
+        if data_args.task_name in ("rte", "wnli")
+        else ("premise", "hypothesis")
+    )
 
     # Padding strategy
     if data_args.pad_to_max_length:
