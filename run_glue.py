@@ -218,8 +218,6 @@ if __name__ == "__main__":
     # Get the metric function
     metric = load_metric("accuracy")
 
-    # You can define your custom compute_metrics function. It takes an `EvalPrediction` object (a namedtuple with a
-    # predictions and label_ids field) and has to return a dictionary string to float.
     def compute_metrics(p: EvalPrediction):
         preds = p.predictions[0] if isinstance(p.predictions, tuple) else p.predictions
         preds = np.argmax(preds, axis=1)
@@ -229,12 +227,13 @@ if __name__ == "__main__":
         return result
 
     # Data collator will default to DataCollatorWithPadding, so we change it if we already did the padding.
-    if data_args.pad_to_max_length:
-        data_collator = default_data_collator
-    elif training_args.fp16:
-        data_collator = DataCollatorWithPadding(tokenizer, pad_to_multiple_of=8)
-    else:
-        data_collator = None
+    data_collator = (
+        default_data_collator
+        if data_args.pad_to_max_length
+        else DataCollatorWithPadding(tokenizer, pad_to_multiple_of=8)
+        if training_args.fp16
+        else None
+    )
 
     # Initialize our Trainer
     trainer = Trainer(
@@ -249,12 +248,13 @@ if __name__ == "__main__":
 
     # Training
     if training_args.do_train:
-        if last_checkpoint is not None:
-            checkpoint = last_checkpoint
-        elif os.path.isdir(model_args.model_name_or_path):
-            checkpoint = model_args.model_name_or_path
-        else:
-            checkpoint = None
+        checkpoint = (
+            last_checkpoint
+            if last_checkpoint is not None
+            else model_args.model_name_or_path
+            if os.path.isdir(model_args.model_name_or_path)
+            else None
+        )
         train_result = trainer.train(resume_from_checkpoint=checkpoint)
         metrics = train_result.metrics
 
