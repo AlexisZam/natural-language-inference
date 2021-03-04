@@ -317,3 +317,27 @@ if training_args.do_predict:
             for index, item in enumerate(predictions):
                 item = label_list[item]
                 writer.write(f"{index}\t{item}\n")
+
+if False:
+    # Hyperparameter search
+    def model_init():
+        return AutoModelForSequenceClassification.from_pretrained(
+            model_args.model_name_or_path, num_labels=num_labels
+        )
+
+
+    trainer = Trainer(
+        model_init=model_init,
+        args=training_args,
+        train_dataset=train_dataset,
+        eval_dataset=eval_dataset if training_args.do_eval else None,
+        tokenizer=tokenizer,
+        compute_metrics=compute_metrics,
+    )
+
+    best_run = trainer.hyperparameter_search(n_trials=10, direction="maximize")
+
+    for n, v in best_run.hyperparameters.items():
+        setattr(trainer.args, n, v)
+
+    trainer.train()
