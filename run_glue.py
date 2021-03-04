@@ -332,7 +332,7 @@ if __name__ == "__main__":
         logger.info(f"Sample {index} of the training set: {train_dataset[index]}.")
 
     # Get the metric function
-    metric = load_metric("glue", "mnli")
+    metric = load_metric("accuracy")
     # TODO: When datasets metrics include regular accuracy, make an else here and remove special branch from
     # compute_metrics
 
