@@ -8,7 +8,7 @@ from dataclasses import dataclass, field
 from typing import Optional
 
 import numpy as np
-from datasets import load_dataset, load_metric
+from datasets import ClassLabel, load_dataset, load_metric
 
 import transformers
 from transformers import (
@@ -30,6 +30,7 @@ task_to_keys = {
     "mnli": ("premise", "hypothesis"),
     "qnli": ("question", "sentence"),
     "rte": ("sentence1", "sentence2"),
+    "scitail": ("premise", "hypothesis"),
     "snli": ("premise", "hypothesis"),
     "wnli": ("sentence1", "sentence2"),
 }
@@ -191,7 +192,9 @@ if __name__ == "__main__":
     # (the dataset will be downloaded automatically from the datasets Hub).
     # Downloading and loading a dataset from the hub.
     datasets = (
-        load_dataset(data_args.task_name)
+        load_dataset(data_args.task_name, "tsv_format")
+        if data_args.task_name == "scitail"
+        else load_dataset(data_args.task_name)
         if data_args.task_name == "snli"
         else load_dataset("glue", data_args.task_name)
     )
@@ -199,7 +202,11 @@ if __name__ == "__main__":
     # https://huggingface.co/docs/datasets/loading_datasets.html.
 
     # Labels
-    label_list = datasets["train"].features["label"].names
+    label_list = (
+        ("entails", "neutral")
+        if data_args.task_name == "scitail"
+        else datasets["train"].features["label"].names
+    )
     num_labels = len(label_list)
 
     # Load pretrained model and tokenizer
@@ -264,6 +271,9 @@ if __name__ == "__main__":
         )
     max_seq_length = min(data_args.max_seq_length, tokenizer.model_max_length)
 
+    if data_args.task_name == "scitail":
+        label = ClassLabel(names=label_list)
+
     def preprocess_function(examples):
         # Tokenize the texts
         result = tokenizer(
@@ -273,6 +283,9 @@ if __name__ == "__main__":
             max_length=max_seq_length,
             truncation=True,
         )
+
+        if data_args.task_name == "scitail":
+            result["label"] = label.str2int(examples["label"])
 
         # Map labels to IDs (not necessary for GLUE tasks)
         if label_to_id is not None and "label" in examples:
