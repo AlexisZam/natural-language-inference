@@ -333,8 +333,6 @@ if __name__ == "__main__":
 
     # Get the metric function
     metric = load_metric("accuracy")
-    # TODO: When datasets metrics include regular accuracy, make an else here and remove special branch from
-    # compute_metrics
 
     # You can define your custom compute_metrics function. It takes an `EvalPrediction` object (a namedtuple with a
     # predictions and label_ids field) and has to return a dictionary string to float.
