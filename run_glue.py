@@ -31,6 +31,7 @@ task_to_keys = {
     "mnli": ("premise", "hypothesis"),
     "qnli": ("question", "sentence"),
     "rte": ("sentence1", "sentence2"),
+    "snli": ("premise", "hypothesis"),
     "wnli": ("sentence1", "sentence2"),
 }
 
@@ -190,7 +191,11 @@ if __name__ == "__main__":
     # Get the datasets: you can specify a GLUE benchmark task
     # (the dataset will be downloaded automatically from the datasets Hub).
     # Downloading and loading a dataset from the hub.
-    datasets = load_dataset("glue", data_args.task_name)
+    datasets = (
+        load_dataset(data_args.task_name)
+        if data_args.task_name == "snli"
+        else load_dataset("glue", data_args.task_name)
+    )
     # See more about loading any type of standard or custom dataset at
     # https://huggingface.co/docs/datasets/loading_datasets.html.
 
@@ -283,6 +288,12 @@ if __name__ == "__main__":
         load_from_cache_file=not data_args.overwrite_cache,
     )
 
+    if data_args.task_name == "snli":
+        datasets = datasets.filter(
+            lambda example: example["label"] != -1,
+            load_from_cache_file=not data_args.overwrite_cache,
+        )
+
     train_dataset = datasets["train"]
     eval_dataset = datasets[
         "validation_matched" if data_args.task_name == "mnli" else "validation"
@@ -294,7 +305,7 @@ if __name__ == "__main__":
         logger.info(f"Sample {index} of the training set: {train_dataset[index]}.")
 
     # Get the metric function
-    metric = load_metric("glue", data_args.task_name)
+    metric = load_metric("glue", "mnli")
     # TODO: When datasets metrics include regular accuracy, make an else here and remove special branch from
     # compute_metrics
 
