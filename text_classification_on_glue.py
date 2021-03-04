@@ -13,19 +13,6 @@ from transformers import (
 """Original file is located at
     https://colab.research.google.com/github/huggingface/notebooks/blob/master/examples/text_classification.ipynb
 
-If you're opening this Notebook on colab, you will probably need to install 🤗
-Transformers and 🤗 Datasets. Uncomment the following cell and run it.
-
-If you're opening this notebook locally, make sure your environment has an
-install from the last version of those libraries.
-
-You can find a script version of this notebook to fine-tune your model in a
-distributed fashion using multiple GPUs or TPUs
-[here](https://github.com/huggingface/transformers/tree/master/examples/text-classification).
-
-The GLUE Benchmark is a group of nine classification tasks on sentences or pairs
-of sentences which are:
-
 - [MNLI](https://arxiv.org/abs/1704.05426) (Multi-Genre Natural Language
   Inference) Determine if a sentence entails, contradicts or is unrelated to a
   given hypothesis. (This dataset has two versions, one with the validation and
@@ -41,11 +28,6 @@ of sentences which are:
   anonymous pronoun and a sentence with this pronoun replaced are entailed or
   not. (This dataset is built from the Winograd Schema Challenge dataset.)
 
-We will see how to easily load the dataset for each one of those tasks and use
-the `Trainer` API to fine-tune a model on it. Each task is named by its acronym,
-with `mnli-mm` standing for the mismatched version of MNLI (so same training set
-as `mnli` but different validation and test sets):
-
 This notebook is built to run on any of the tasks in the list above, with any
 model checkpoint from the [Model Hub](https://huggingface.co/models) as long as
 that model has a version with a classification head. Depending on you model and
@@ -59,29 +41,9 @@ batch_size = 16
 
 # Loading the dataset
 
-"""We will use the [🤗 Datasets](https://github.com/huggingface/datasets) library
-to download the data and get the metric we need to use for evaluation (to
-compare our model to the benchmark). This can be easily done with the functions
-`load_dataset` and `load_metric`.
-
-Apart from `mnli-mm` being a special code, we can directly pass our task name
-to those functions. `load_dataset` will cache the dataset to avoid downloading
-it again the next time you run this cell."""
-
 actual_task = "mnli" if task == "mnli-mm" else task
 dataset = load_dataset("glue", actual_task)
 metric = load_metric("accuracy")
-
-"""The `dataset` object itself is
-[`DatasetDict`](https://huggingface.co/docs/datasets/package_reference/main_classes.html#datasetdict),
-which contains one key for the training, validation and test set (with more keys
-for the mismatched validation and test set in the special case of `mnli`).
-
-To get a sense of what the data looks like, the following function will show
-some examples picked randomly in the dataset.
-
-You can call its `compute` method with your predictions and labels directly
-and it will return a dictionary with the metric(s) value:"""
 
 # Preprocessing the data
 
@@ -96,9 +58,6 @@ To do all of this, we instantiate our tokenizer with the
 
 - we get a tokenizer that corresponds to the model architecture we want to use,
 - we download the vocabulary used when pretraining this specific checkpoint.
-
-That vocabulary will be cached, so it's not downloaded again the next time we
-run the cell.
 """
 
 tokenizer = AutoTokenizer.from_pretrained(model_checkpoint, use_fast=True)
@@ -107,19 +66,6 @@ tokenizer = AutoTokenizer.from_pretrained(model_checkpoint, use_fast=True)
 tokenizers (backed by Rust) from the 🤗 Tokenizers library. Those fast
 tokenizers are available for almost all models, but if you got an error with the
 previous call, remove that argument.
-
-You can directly call this tokenizer on one sentence or a pair of sentences:
-
-Depending on the model you selected, you will see different keys in the
-dictionary returned by the cell above. They don't matter much for what we're
-doing here (just know they are required by the model we will instantiate later),
-you can learn more about them in [this
-tutorial](https://huggingface.co/transformers/preprocessing.html) if you're
-interested.
-
-To preprocess our dataset, we will thus need the names of the columns containing
-the sentence(s). The following dictionary keeps track of the correspondence task
-to column names:
 """
 
 task_to_keys = {
@@ -129,8 +75,6 @@ task_to_keys = {
     "rte": ("sentence1", "sentence2"),
     "wnli": ("sentence1", "sentence2"),
 }
-
-"""We can double check it does work on our current dataset:"""
 
 sentence1_key, sentence2_key = task_to_keys[task]
 
@@ -145,13 +89,7 @@ def preprocess_function(examples):
 
 
 """This function works with one or several examples. In the case of several
-examples, the tokenizer will return a list of lists for each key:
-
-To apply this function on all the sentences (or pairs of sentences) in our
-dataset, we just use the `map` method of our `dataset` object we created
-earlier. This will apply the function on all the elements of all the splits in
-`dataset`, so our training, validation and testing data will be preprocessed in
-one single command."""
+examples, the tokenizer will return a list of lists for each key:"""
 
 encoded_dataset = dataset.map(preprocess_function, batched=True)
 
@@ -272,6 +210,8 @@ trainer.evaluate()
 leaderboard](https://gluebenchmark.com/leaderboard)."""
 
 # Hyperparameter search
+
+
 def model_init():
     return AutoModelForSequenceClassification.from_pretrained(
         model_checkpoint, num_labels=num_labels
