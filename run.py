@@ -61,9 +61,7 @@ logging.basicConfig(
 logger.setLevel(logging.INFO)
 
 # Log on each process the small summary:
-logger.warning(
-    f"Device: {training_args.device}" + f"16-bits training: {training_args.fp16}"
-)
+logger.warning(f"Device: {training_args.device}16-bits training: {training_args.fp16}")
 # Set the verbosity to info of the Transformers logger:
 transformers.utils.logging.set_verbosity_info()
 transformers.utils.logging.enable_default_handler()
@@ -324,7 +322,6 @@ if False:
         return AutoModelForSequenceClassification.from_pretrained(
             model_args.model_name_or_path, num_labels=num_labels
         )
-
 
     trainer = Trainer(
         model_init=model_init,
