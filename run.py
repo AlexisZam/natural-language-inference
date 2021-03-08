@@ -17,7 +17,6 @@ from transformers import (
     DataCollatorWithPadding,
     EvalPrediction,
     HfArgumentParser,
-    PretrainedConfig,
     Trainer,
     TrainingArguments,
     default_data_collator,
@@ -190,7 +189,7 @@ metric = load_metric("accuracy")
 
 def compute_metrics(p: EvalPrediction):
     preds = p.predictions[0] if isinstance(p.predictions, tuple) else p.predictions
-    preds = np.argmax(preds, axis=1)
+    preds = preds.argmax(axis=1)
     result = metric.compute(predictions=preds, references=p.label_ids)
     if len(result) > 1:
         result["combined_score"] = np.mean(list(result.values())).item()
@@ -280,7 +279,7 @@ if training_args.do_predict:
         # Removing the `label` columns because it contains -1 and Trainer won't like that.
         test_dataset.remove_columns_("label")
         predictions = trainer.predict(test_dataset=test_dataset).predictions
-        predictions = np.argmax(predictions, axis=1)
+        predictions = predictions.argmax(axis=1)
 
         output_test_file = os.path.join(
             training_args.output_dir, f"test_results_{task}.txt"
