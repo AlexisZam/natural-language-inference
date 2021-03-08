@@ -24,8 +24,11 @@ class DataTrainingArguments:
     the command line.
     """
 
-    task_name: str = field(
-        metadata={"help": "The name of the task to train on: " + ", ".join(task_names)}
+    task_name: str.lower = field(
+        metadata={
+            "choices": task_names,
+            "help": "The name of the task to train on: " + ", ".join(task_names),
+        },
     )
     max_seq_length: int = field(
         default=128,
@@ -45,13 +48,6 @@ class DataTrainingArguments:
             "If False, will pad the samples dynamically when batching to the maximum length in the batch."
         },
     )
-
-    def __post_init__(self):
-        self.task_name = self.task_name.lower()
-        if self.task_name not in task_names:
-            raise ValueError(
-                "Unknown task, you should pick one in " + ",".join(task_names)
-            )
 
 
 @dataclass
