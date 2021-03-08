@@ -43,13 +43,11 @@ if (
     last_checkpoint = get_last_checkpoint(training_args.output_dir)
     if last_checkpoint is None and len(os.listdir(training_args.output_dir)) > 0:
         raise ValueError(
-            f"Output directory ({training_args.output_dir}) already exists and is not empty. "
-            "Use --overwrite_output_dir to overcome."
+            f"Output directory ({training_args.output_dir}) already exists and is not empty. Use --overwrite_output_dir to overcome."
         )
     elif last_checkpoint is not None:
         logger.info(
-            f"Checkpoint detected, resuming training at {last_checkpoint}. To avoid this behavior, change "
-            "the `--output_dir` or add `--overwrite_output_dir` to train from scratch."
+            f"Checkpoint detected, resuming training at {last_checkpoint}. To avoid this behavior, change the `--output_dir` or add `--overwrite_output_dir` to train from scratch."
         )
 
 # Setup logging
@@ -132,26 +130,9 @@ sentence1_key, sentence2_key = (
 # Padding strategy
 padding = "max_length" if data_args.pad_to_max_length else False
 
-# Some models have set the order of the labels to use, so let's make sure we do use it.
-label_to_id = None
-if model.config.label2id != PretrainedConfig(num_labels=num_labels).label2id:
-    # Some have all caps in their config, some don't.
-    label_name_to_id = {k.lower(): v for k, v in model.config.label2id.items()}
-    if list(sorted(label_name_to_id.keys())) == list(sorted(label_list)):
-        label_to_id = {
-            i: int(label_name_to_id[label_list[i]]) for i in range(num_labels)
-        }
-    else:
-        logger.warn(
-            "Your model seems to have been trained with labels, but they don't match the dataset: ",
-            f"model labels: {list(sorted(label_name_to_id.keys()))}, dataset labels: {list(sorted(label_list))}."
-            "\nIgnoring the model labels as a result.",
-        )
-
 if data_args.max_seq_length > tokenizer.model_max_length:
     logger.warn(
-        f"The max_seq_length passed ({data_args.max_seq_length}) is larger than the maximum length for the"
-        f"model ({tokenizer.model_max_length}). Using max_seq_length={tokenizer.model_max_length}."
+        f"The max_seq_length passed ({data_args.max_seq_length}) is larger than the maximum length for the model ({tokenizer.model_max_length}). Using max_seq_length={tokenizer.model_max_length}."
     )
 max_seq_length = min(data_args.max_seq_length, tokenizer.model_max_length)
 
