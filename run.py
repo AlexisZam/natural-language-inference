@@ -153,11 +153,6 @@ def preprocess_function(examples):
     if data_args.task_name == "scitail":
         result["label"] = label.str2int(examples["label"])
 
-    # Map labels to IDs (not necessary for GLUE tasks)
-    if label_to_id is not None and "label" in examples:
-        result["label"] = [
-            (label_to_id[l] if l != -1 else -1) for l in examples["label"]
-        ]
     return result
 
 
