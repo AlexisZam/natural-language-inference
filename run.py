@@ -291,12 +291,11 @@ if training_args.do_predict:
                 item = label_list[item]
                 writer.write(f"{index}\t{item}\n")
 
+# Hyperparameter search
 if False:
-    # Hyperparameter search
-    def model_init():
-        return AutoModelForSequenceClassification.from_pretrained(
-            model_args.model_name_or_path, num_labels=num_labels
-        )
+    model_init = lambda: AutoModelForSequenceClassification.from_pretrained(
+        model_args.model_name_or_path, num_labels=num_labels
+    )
 
     trainer = Trainer(
         model_init=model_init,
