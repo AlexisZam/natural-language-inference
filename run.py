@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 
 import logging
-import os
 import random
 import sys
+from pathlib import Path, PurePath
 
 import numpy as np
 from datasets import ClassLabel, load_dataset, load_metric
@@ -35,12 +35,12 @@ model_args, data_args, training_args = parser.parse_args_into_dataclasses()
 # Detecting last checkpoint.
 last_checkpoint = None
 if (
-    os.path.isdir(training_args.output_dir)
+    Path(training_args.output_dir).is_dir()
     and training_args.do_train
     and not training_args.overwrite_output_dir
 ):
     last_checkpoint = get_last_checkpoint(training_args.output_dir)
-    if last_checkpoint is None and len(os.listdir(training_args.output_dir)) > 0:
+    if last_checkpoint is None and len(Path(training_args.output_dir).iterdir()) > 0:
         raise ValueError(
             f"Output directory ({training_args.output_dir}) already exists and is not empty. Use --overwrite_output_dir to overcome."
         )
@@ -218,19 +218,19 @@ trainer = Trainer(
 
 # Training
 if training_args.do_train:
-    checkpoint = (
+    resume_from_checkpoint = (
         last_checkpoint
         if last_checkpoint is not None
         else model_args.model_name_or_path
-        if os.path.isdir(model_args.model_name_or_path)
+        if Path(model_args.model_name_or_path).is_dir()
         else None
     )
-    train_result = trainer.train(resume_from_checkpoint=checkpoint)
+    train_result = trainer.train(resume_from_checkpoint=resume_from_checkpoint)
     metrics = train_result.metrics
 
     trainer.save_model()  # Saves the tokenizer too for easy upload
 
-    output_train_file = os.path.join(training_args.output_dir, "train_results.txt")
+    output_train_file = PurePath(training_args.output_dir).joinpath("train_results.txt")
     with open(output_train_file, "w") as writer:
         logger.info("***** Train results *****")
         for key, value in sorted(metrics.items()):
@@ -239,7 +239,7 @@ if training_args.do_train:
 
     # Need to save the state, since Trainer.save_model saves only the tokenizer with the model
     trainer.state.save_to_json(
-        os.path.join(training_args.output_dir, "trainer_state.json")
+        PurePath(training_args.output_dir).joinpath("trainer_state.json")
     )
 
 # Evaluation
@@ -256,8 +256,8 @@ if training_args.do_eval:
     for eval_dataset, task in zip(eval_datasets, tasks):
         eval_result = trainer.evaluate(eval_dataset=eval_dataset)
 
-        output_eval_file = os.path.join(
-            training_args.output_dir, f"eval_results_{task}.txt"
+        output_eval_file = PurePath(training_args.output_dir).joinpath(
+            f"eval_results_{task}.txt"
         )
         with open(output_eval_file, "w") as writer:
             logger.info(f"***** Eval results {task} *****")
@@ -281,8 +281,8 @@ if training_args.do_predict:
         predictions = trainer.predict(test_dataset=test_dataset).predictions
         predictions = predictions.argmax(axis=1)
 
-        output_test_file = os.path.join(
-            training_args.output_dir, f"test_results_{task}.txt"
+        output_test_file = PurePath(training_args.output_dir).joinpath(
+            f"test_results_{task}.txt"
         )
         with open(output_test_file, "w") as writer:
             logger.info(f"***** Test results {task} *****")
