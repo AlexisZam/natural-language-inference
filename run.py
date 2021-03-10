@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 
+from re import compile
+
 import numpy as np
 from datasets import ClassLabel, load_dataset, load_metric
 
@@ -44,11 +46,12 @@ def main():
     # Set seed before initializing model.
     set_seed(training_args.seed)
 
+    anli_pattern = compile("^anli_r[1-3]$")
+
     # Get the datasets.
-    # Downloading and loading a dataset from the hub.
     datasets = (
         load_dataset("anli")
-        if data_args.task_name.startswith("anli")
+        if anli_pattern.search(data_args.task_name)
         else load_dataset(data_args.task_name, "tsv_format")
         if data_args.task_name == "scitail"
         else load_dataset(data_args.task_name)
@@ -59,7 +62,7 @@ def main():
     # Labels
     label_list = (
         datasets["train_r1"].features["label"].names
-        if data_args.task_name.startswith("anli")
+        if anli_pattern.search(data_args.task_name)
         else ("entails", "neutral")
         if data_args.task_name == "scitail"
         else datasets["train"].features["label"].names
@@ -137,7 +140,9 @@ def main():
         load_from_cache_file=not data_args.overwrite_cache,
     )
 
-    datasets = datasets.remove_columns(("idx", "sentence1", "sentence2"))
+    datasets = datasets.remove_columns(
+        "idx" if data_args.task_name == "qnli" else ("idx", "sentence1", "sentence2")
+    )
 
     if data_args.task_name == "snli":
         datasets = datasets.filter(
@@ -145,7 +150,7 @@ def main():
             load_from_cache_file=not data_args.overwrite_cache,
         )
 
-    if data_args.task_name.startswith("anli"):
+    if anli_pattern.search(data_args.task_name):
         round = data_args.task_name.split("_")[1]
         train_dataset = datasets[f"train_{round}"]
         eval_dataset = datasets[f"dev_{round}"]
