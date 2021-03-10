@@ -2,7 +2,6 @@
 
 from re import compile
 
-import numpy as np
 from datasets import ClassLabel, load_dataset, load_metric
 
 from args import DataTrainingArguments, ModelArguments
@@ -51,7 +50,7 @@ def main():
     # Get the datasets.
     datasets = (
         load_dataset("anli")
-        if anli_pattern.search(data_args.task_name)
+        if anli_pattern.search(data_args.task_name) is not None
         else load_dataset(data_args.task_name, "tsv_format")
         if data_args.task_name == "scitail"
         else load_dataset(data_args.task_name)
@@ -62,7 +61,7 @@ def main():
     # Labels
     label_list = (
         datasets["train_r1"].features["label"].names
-        if anli_pattern.search(data_args.task_name)
+        if anli_pattern.search(data_args.task_name) is not None
         else ("entails", "neutral")
         if data_args.task_name == "scitail"
         else datasets["train"].features["label"].names
@@ -150,7 +149,7 @@ def main():
             load_from_cache_file=not data_args.overwrite_cache,
         )
 
-    if anli_pattern.search(data_args.task_name):
+    if anli_pattern.search(data_args.task_name) is not None:
         round = data_args.task_name.split("_")[1]
         train_dataset = datasets[f"train_{round}"]
         eval_dataset = datasets[f"dev_{round}"]
@@ -174,12 +173,9 @@ def main():
             else eval_prediction.predictions
         )
         predictions = predictions.argmax(axis=1)
-        result = metric.compute(
+        return metric.compute(
             predictions=predictions, references=eval_prediction.label_ids
         )
-        if len(result) > 1:
-            result["combined_score"] = np.mean(list(result.values())).item()
-        return result
 
     # Data collator will default to DataCollatorWithPadding, so we change it if we already did the padding.
     data_collator = (
