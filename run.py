@@ -3,7 +3,6 @@
 import logging
 import random
 import sys
-from pathlib import Path
 
 import numpy as np
 from datasets import ClassLabel, load_dataset, load_metric
@@ -148,6 +147,8 @@ def main():
         batched=True,
         load_from_cache_file=not data_args.overwrite_cache,
     )
+
+    datasets = datasets.remove_columns(("idx", "sentence1", "sentence2"))
 
     if data_args.task_name == "snli":
         datasets = datasets.filter(
