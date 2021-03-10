@@ -36,8 +36,8 @@ class DataTrainingArguments:
             "help": "The maximum total input sequence length after tokenization. Sequences longer than this will be truncated, sequences shorter will be padded."
         },
     )
-    overwrite_cache: bool = field(
-        default=False,
+    load_from_cache_file: bool = field(
+        default=True,
         metadata={"help": "Overwrite the cached preprocessed datasets or not."},
     )
     pad_to_max_length: bool = field(
