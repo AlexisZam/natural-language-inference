@@ -23,7 +23,6 @@ from transformers import (
     default_data_collator,
     set_seed,
 )
-from transformers.trainer_utils import get_last_checkpoint
 
 
 def main():
@@ -36,23 +35,6 @@ def main():
         (ModelArguments, DataTrainingArguments, TrainingArguments)
     )
     model_args, data_args, training_args = parser.parse_args_into_dataclasses()
-
-    # Detecting last checkpoint.
-    last_checkpoint = None
-    if (
-        Path(training_args.output_dir).is_dir()
-        and training_args.do_train
-        and not training_args.overwrite_output_dir
-    ):
-        last_checkpoint = get_last_checkpoint(training_args.output_dir)
-        if last_checkpoint is None and any(Path(training_args.output_dir).iterdir()):
-            raise ValueError(
-                f"Output directory ({training_args.output_dir}) already exists and is not empty. Use --overwrite_output_dir to overcome."
-            )
-        elif last_checkpoint is not None:
-            print(
-                f"Checkpoint detected, resuming training at {last_checkpoint}. To avoid this behavior, change the `--output_dir` or add `--overwrite_output_dir` to train from scratch."
-            )
 
     # Setup logging
     logging.basicConfig(
@@ -224,22 +206,17 @@ def main():
 
     # Training
     if training_args.do_train:
-        trainer.my_train(
-            last_checkpoint, model_args.model_name_or_path, training_args.output_dir
-        )
+        trainer.my_train(model_args.model_name_or_path)
 
     # Evaluation
     if training_args.do_eval:
-        trainer.my_evaluate(
-            data_args.task_name, eval_dataset, datasets, training_args.output_dir
-        )
+        trainer.my_evaluate(data_args.task_name, eval_dataset, datasets)
 
     if training_args.do_predict:
         trainer.my_predict(
             data_args.task_name,
             test_dataset,
             datasets,
-            training_args.output_dir,
             label_list,
         )
 
