@@ -22,8 +22,7 @@ class MyTrainer(Trainer):
         if resume_from_checkpoint is None and Path(model_name_or_path).is_dir():
             resume_from_checkpoint = model_name_or_path
 
-        train_result = self.train(resume_from_checkpoint=resume_from_checkpoint)
-        metrics = train_result.metrics
+        metrics = self.train(resume_from_checkpoint=resume_from_checkpoint).metrics
 
         self.save_model()  # Saves the tokenizer too for easy upload
 

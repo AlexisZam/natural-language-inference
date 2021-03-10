@@ -24,9 +24,6 @@ from transformers.utils.logging import (
     set_verbosity_info,
 )
 
-# See all possible arguments in src/transformers/training_args.py
-# or by passing the --help flag to this script.
-
 parser = HfArgumentParser((ModelArguments, DataTrainingArguments, TrainingArguments))
 model_args, data_args, training_args = parser.parse_args_into_dataclasses()
 
@@ -43,7 +40,6 @@ set_seed(training_args.seed)
 
 anli_pattern = compile("^anli_r[1-3]$")
 
-# Get the datasets.
 datasets = (
     load_dataset("anli")
     if anli_pattern.search(data_args.task_name) is not None
@@ -54,7 +50,6 @@ datasets = (
     else load_dataset("glue", data_args.task_name)
 )
 
-# Labels
 label_list = (
     datasets["train_r1"].features["label"].names
     if anli_pattern.search(data_args.task_name) is not None
@@ -64,7 +59,6 @@ label_list = (
 )
 num_labels = len(label_list)
 
-# Load pretrained model and tokenizer
 config = AutoConfig.from_pretrained(
     model_args.config_name if model_args.config_name else model_args.model_name_or_path,
     num_labels=num_labels,
@@ -91,7 +85,6 @@ model = AutoModelForSequenceClassification.from_pretrained(
     use_auth_token=True if model_args.use_auth_token else None,
 )
 
-# Preprocessing the datasets
 sentence1_key, sentence2_key = (
     ("question", "sentence")
     if data_args.task_name == "qnli"
@@ -100,7 +93,6 @@ sentence1_key, sentence2_key = (
     else ("premise", "hypothesis")
 )
 
-# Padding strategy
 padding = "max_length" if data_args.pad_to_max_length else False
 
 if data_args.max_seq_length > tokenizer.model_max_length:
@@ -114,7 +106,6 @@ if data_args.task_name == "scitail":
 
 
 def preprocess_function(examples):
-    # Tokenize the texts
     result = tokenizer(
         examples[sentence1_key],
         examples[sentence2_key],
@@ -157,7 +148,6 @@ else:
     ]
     test_dataset = datasets["test_matched" if data_args.task_name == "mnli" else "test"]
 
-# Get the metric function
 metric = load_metric("accuracy")
 
 
@@ -180,7 +170,6 @@ data_collator = (
     else None
 )
 
-# Initialize our Trainer
 trainer = MyTrainer(
     model=model,
     args=training_args,
@@ -191,18 +180,15 @@ trainer = MyTrainer(
     data_collator=data_collator,
 )
 
-# Training
 if training_args.do_train:
     trainer.my_train(model_args.model_name_or_path)
 
-# Evaluation
 if training_args.do_eval:
     trainer.my_evaluate(data_args.task_name, eval_dataset, datasets)
 
 if training_args.do_predict:
     trainer.my_predict(data_args.task_name, test_dataset, datasets, label_list)
 
-# Hyperparameter search
 if False:
     model_init = lambda: AutoModelForSequenceClassification.from_pretrained(
         model_args.model_name_or_path, num_labels=num_labels
