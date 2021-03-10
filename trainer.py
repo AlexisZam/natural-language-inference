@@ -44,9 +44,6 @@ class MyTrainer(Trainer):
         )
 
     def my_evaluate(self, task_name, eval_dataset, datasets):
-        print("*** Evaluate ***")
-
-        # Loop to handle MNLI double evaluation (matched, mis-matched)
         tasks = [task_name]
         eval_datasets = [eval_dataset]
         if task_name == "mnli":
@@ -66,9 +63,6 @@ class MyTrainer(Trainer):
                     writer.write(f"{key} = {value}\n")
 
     def my_predict(self, task_name, test_dataset, datasets, label_list):
-        print("*** Test ***")
-
-        # Loop to handle MNLI double evaluation (matched, mis-matched)
         tasks = [task_name]
         test_datasets = [test_dataset]
         if task_name == "mnli":
