@@ -1,6 +1,8 @@
 datasets
 -e git+https://github.com/huggingface/transformers#egg=transformers
 
+optuna
+
 sklearn
 
 -f https://download.pytorch.org/whl/torch_stable.html 
