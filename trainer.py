@@ -12,11 +12,13 @@ class MyTrainer(Trainer):
             last_checkpoint = get_last_checkpoint(self.args.output_dir)
             if last_checkpoint is None and any(Path(self.args.output_dir).iterdir()):
                 raise ValueError(
-                    f"Output directory ({self.args.output_dir}) already exists and is not empty. Use --overwrite_output_dir to overcome."
+                    f"Output directory ({self.args.output_dir}) already exists and is not empty.",
+                    "Use --overwrite_output_dir to overcome.",
                 )
             elif last_checkpoint is not None:
                 print(
-                    f"Checkpoint detected, resuming training at {last_checkpoint}. To avoid this behavior, change the `--output_dir` or add `--overwrite_output_dir` to train from scratch."
+                    f"Checkpoint detected, resuming training at {last_checkpoint}.",
+                    "To avoid this behavior, change the `--output_dir` or add `--overwrite_output_dir` to train from scratch.",
                 )
 
         resume_from_checkpoint = (
@@ -82,5 +84,4 @@ class MyTrainer(Trainer):
                 print(f"***** Test results {task} *****")
                 writer.write("index\tprediction\n")
                 for index, item in enumerate(predictions):
-                    item = label_list[item]
-                    writer.write(f"{index}\t{item}\n")
+                    writer.write(f"{index}\t{label_list[item]}\n")
