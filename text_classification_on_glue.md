@@ -20,11 +20,6 @@ the GPU you are using, you might need to adjust the batch size to avoid
 out-of-memory errors. Set those three parameters, then the rest of the notebook
 should run smoothly.
 
-A 🤗 Transformers `Tokenizer` will tokenize the inputs (including converting the
-tokens to their corresponding IDs in the pretrained vocabulary) and put it in a
-format the model expects, as well as generate the other inputs that model
-requires.
-
 To do all of this, we instantiate our tokenizer with the
 `AutoTokenizer.from_pretrained` method, which will ensure:
 
@@ -60,14 +55,10 @@ model properly (if it was not the last one).
 
 You can try to find some good hyperparameter on a portion of the training
 dataset by replacing the `train_dataset` line above by:
-```python
-train_dataset = encoded_dataset["train"].shard(index=1, num_shards=10)
-```
-for 1/10th of the dataset.
 
-The `hyperparameter_search` method returns a `BestRun` objects, which contains
-the value of the objective maximized (by default the sum of all metrics) and the
-hyperparameters it used for that run.
+```python
+train_dataset = train_dataset.shard(index=1, num_shards=10)
+```
 
 You can customize the objective to maximize by passing along a
 `compute_objective` function to the `hyperparameter_search` method, and you can
