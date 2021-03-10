@@ -6,28 +6,22 @@ from transformers.trainer_utils import get_last_checkpoint
 
 class MyTrainer(Trainer):
     def my_train(self, model_name_or_path):
-        # Detecting last checkpoint.
-        last_checkpoint = None
+        resume_from_checkpoint = None
         if Path(self.args.output_dir).is_dir() and not self.args.overwrite_output_dir:
-            last_checkpoint = get_last_checkpoint(self.args.output_dir)
-            if last_checkpoint is None and any(Path(self.args.output_dir).iterdir()):
+            resume_from_checkpoint = get_last_checkpoint(self.args.output_dir)
+            if resume_from_checkpoint is not None:
+                print(
+                    f"Checkpoint detected, resuming training at {resume_from_checkpoint}.",
+                    "To avoid this behavior, change the `--output_dir` or add `--overwrite_output_dir` to train from scratch.",
+                )
+            elif any(Path(self.args.output_dir).iterdir()):
                 raise ValueError(
                     f"Output directory ({self.args.output_dir}) already exists and is not empty.",
                     "Use --overwrite_output_dir to overcome.",
                 )
-            elif last_checkpoint is not None:
-                print(
-                    f"Checkpoint detected, resuming training at {last_checkpoint}.",
-                    "To avoid this behavior, change the `--output_dir` or add `--overwrite_output_dir` to train from scratch.",
-                )
+        if resume_from_checkpoint is None and Path(model_name_or_path).is_dir():
+            resume_from_checkpoint = model_name_or_path
 
-        resume_from_checkpoint = (
-            last_checkpoint
-            if last_checkpoint is not None
-            else model_name_or_path
-            if Path(model_name_or_path).is_dir()
-            else None
-        )
         train_result = self.train(resume_from_checkpoint=resume_from_checkpoint)
         metrics = train_result.metrics
 
