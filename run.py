@@ -167,10 +167,16 @@ def main():
     # Get the metric function
     metric = load_metric("accuracy")
 
-    def compute_metrics(p: EvalPrediction):
-        preds = p.predictions[0] if isinstance(p.predictions, tuple) else p.predictions
-        preds = preds.argmax(axis=1)
-        result = metric.compute(predictions=preds, references=p.label_ids)
+    def compute_metrics(eval_prediction: EvalPrediction):
+        predictions = (
+            eval_prediction.predictions[0]
+            if isinstance(eval_prediction.predictions, tuple)
+            else eval_prediction.predictions
+        )
+        predictions = predictions.argmax(axis=1)
+        result = metric.compute(
+            predictions=predictions, references=eval_prediction.label_ids
+        )
         if len(result) > 1:
             result["combined_score"] = np.mean(list(result.values())).item()
         return result
