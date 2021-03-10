@@ -80,3 +80,20 @@ class MyTrainer(Trainer):
                 writer.write("index\tprediction\n")
                 for index, item in enumerate(predictions):
                     writer.write(f"{index}\t{label_list[item]}\n")
+
+    def my_hyperparameter_search(self):
+        hp_space = lambda trial: {
+            "learning_rate": trial.suggest_float("learning_rate", 1e-6, 1e-4, log=True),
+            "num_train_epochs": trial.suggest_int("num_train_epochs", 1, 5),
+            "seed": trial.suggest_int("seed", 1, 40),
+            "per_device_train_batch_size": trial.suggest_categorical(
+                "per_device_train_batch_size", [4, 8, 16, 32]
+            ),
+        }
+
+        best_run = self.hyperparameter_search(
+            hp_space=hp_space, n_trials=10, direction="maximize"
+        )
+
+        for n, v in best_run.hyperparameters.items():
+            setattr(self.args, n, v)

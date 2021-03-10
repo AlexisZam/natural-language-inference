@@ -180,21 +180,12 @@ trainer = MyTrainer(
     data_collator=data_collator,
 )
 
-if training_args.do_train:
-    trainer.my_train(model_args.model_name_or_path)
-
-if training_args.do_eval:
-    trainer.my_evaluate(data_args.task_name, eval_dataset, datasets)
-
-if training_args.do_predict:
-    trainer.my_predict(data_args.task_name, test_dataset, datasets, label_list)
-
 if False:
     model_init = lambda: AutoModelForSequenceClassification.from_pretrained(
         model_args.model_name_or_path, num_labels=num_labels
     )
 
-    trainer = Trainer(
+    trainer = MyTrainer(
         model_init=model_init,
         args=training_args,
         train_dataset=train_dataset,
@@ -203,20 +194,13 @@ if False:
         compute_metrics=compute_metrics,
     )
 
-    hp_space = lambda trial: {
-        "learning_rate": trial.suggest_float("learning_rate", 1e-6, 1e-4, log=True),
-        "num_train_epochs": trial.suggest_int("num_train_epochs", 1, 5),
-        "seed": trial.suggest_int("seed", 1, 40),
-        "per_device_train_batch_size": trial.suggest_categorical(
-            "per_device_train_batch_size", [4, 8, 16, 32]
-        ),
-    }
+    trainer.my_hyperparameter_search()
 
-    best_run = trainer.hyperparameter_search(
-        hp_space=hp_space, n_trials=10, direction="maximize"
-    )
+if training_args.do_train:
+    trainer.my_train(model_args.model_name_or_path)
 
-    for n, v in best_run.hyperparameters.items():
-        setattr(trainer.args, n, v)
+if training_args.do_eval:
+    trainer.my_evaluate(data_args.task_name, eval_dataset, datasets)
 
-    trainer.train()
+if training_args.do_predict:
+    trainer.my_predict(data_args.task_name, test_dataset, datasets, label_list)
