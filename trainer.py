@@ -33,9 +33,11 @@ class MyTrainer(Trainer):
 
         self.save_model()  # Saves the tokenizer too for easy upload
 
-        output_train_file = PurePath(self.args.output_dir).joinpath("train_results.txt")
+        output_train_file = PurePath(self.args.output_dir).joinpath(
+            "training_results.txt"
+        )
         with open(output_train_file, "w") as writer:
-            print("***** Train results *****")
+            print("***** Training results *****")
             for key, value in sorted(metrics.items()):
                 print(f"  {key} = {value}")
                 writer.write(f"{key} = {value}\n")
@@ -56,10 +58,10 @@ class MyTrainer(Trainer):
             eval_result = self.evaluate(eval_dataset=eval_dataset)
 
             output_eval_file = PurePath(self.args.output_dir).joinpath(
-                f"eval_results_{task}.txt"
+                f"evaluation_results_{task}.txt"
             )
             with open(output_eval_file, "w") as writer:
-                print(f"***** Eval results {task} *****")
+                print(f"***** Evaluation results {task} *****")
                 for key, value in sorted(eval_result.items()):
                     print(f"  {key} = {value}")
                     writer.write(f"{key} = {value}\n")
@@ -78,10 +80,10 @@ class MyTrainer(Trainer):
             predictions = predictions.argmax(axis=1)
 
             output_test_file = PurePath(self.args.output_dir).joinpath(
-                f"test_results_{task}.txt"
+                f"prediction_results_{task}.txt"
             )
             with open(output_test_file, "w") as writer:
-                print(f"***** Test results {task} *****")
+                print(f"***** Prediction results {task} *****")
                 writer.write("index\tprediction\n")
                 for index, item in enumerate(predictions):
                     writer.write(f"{index}\t{label_list[item]}\n")
