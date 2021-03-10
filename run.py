@@ -1,13 +1,8 @@
 #!/usr/bin/env python
 
-import logging
-import random
-import sys
-
 import numpy as np
 from datasets import ClassLabel, load_dataset, load_metric
 
-import transformers
 from args import DataTrainingArguments, ModelArguments
 from trainer import MyTrainer
 from transformers import (
@@ -22,11 +17,14 @@ from transformers import (
     default_data_collator,
     set_seed,
 )
+from transformers.utils.logging import (
+    enable_default_handler,
+    enable_explicit_format,
+    set_verbosity_info,
+)
 
 
 def main():
-    logger = logging.getLogger(__name__)
-
     # See all possible arguments in src/transformers/training_args.py
     # or by passing the --help flag to this script.
 
@@ -35,21 +33,12 @@ def main():
     )
     model_args, data_args, training_args = parser.parse_args_into_dataclasses()
 
-    # Setup logging
-    logging.basicConfig(
-        format="%(asctime)s - %(levelname)s - %(name)s -   %(message)s",
-        datefmt="%m/%d/%Y %H:%M:%S",
-        handlers=[logging.StreamHandler(sys.stdout)],
-    )
-
     # Log on each process the small summary:
-    logger.warning(
-        f"Device: {training_args.device}16-bits training: {training_args.fp16}"
-    )
+    print(f"Device: {training_args.device}")
     # Set the verbosity to info of the Transformers logger:
-    transformers.utils.logging.set_verbosity_info()
-    transformers.utils.logging.enable_default_handler()
-    transformers.utils.logging.enable_explicit_format()
+    set_verbosity_info()
+    enable_default_handler()
+    enable_explicit_format()
     print(f"Training/evaluation parameters {training_args}")
 
     # Set seed before initializing model.
@@ -119,8 +108,8 @@ def main():
     padding = "max_length" if data_args.pad_to_max_length else False
 
     if data_args.max_seq_length > tokenizer.model_max_length:
-        logger.warn(
-            f"The max_seq_length passed ({data_args.max_seq_length}) is larger than the maximum length for the model ({tokenizer.model_max_length}). Using max_seq_length={tokenizer.model_max_length}."
+        print(
+            f"WARNING:{__name__}:The max_seq_length passed ({data_args.max_seq_length}) is larger than the maximum length for the model ({tokenizer.model_max_length}). Using max_seq_length={tokenizer.model_max_length}."
         )
     max_seq_length = min(data_args.max_seq_length, tokenizer.model_max_length)
 
@@ -169,10 +158,6 @@ def main():
         test_dataset = datasets[
             "test_matched" if data_args.task_name == "mnli" else "test"
         ]
-
-    # Log a few random samples from the training set:
-    for index in random.sample(range(len(train_dataset)), 3):
-        print(f"Sample {index} of the training set: {train_dataset[index]}.")
 
     # Get the metric function
     metric = load_metric("accuracy")
