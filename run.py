@@ -66,24 +66,24 @@ config = AutoConfig.from_pretrained(
     model_arguments.config_name
     if model_arguments.config_name
     else model_arguments.model_name_or_path,
+    revision=model_arguments.revision,
     num_labels=num_labels,
     finetuning_task=dataset_arguments.task_name,
-    revision=model_arguments.model_revision,
     use_auth_token=True if model_arguments.use_auth_token else None,
 )
 tokenizer = AutoTokenizer.from_pretrained(
     model_arguments.tokenizer_name
     if model_arguments.tokenizer_name
     else model_arguments.model_name_or_path,
+    revision=model_arguments.revision,
     use_fast=model_arguments.use_fast,
-    revision=model_arguments.model_revision,
     use_auth_token=True if model_arguments.use_auth_token else None,
 )
 model = AutoModelForSequenceClassification.from_pretrained(
     model_arguments.model_name_or_path,
-    from_tf=bool(".ckpt" in model_arguments.model_name_or_path),
     config=config,
-    revision=model_arguments.model_revision,
+    from_tf=bool(".ckpt" in model_arguments.model_name_or_path),
+    revision=model_arguments.revision,
     use_auth_token=True if model_arguments.use_auth_token else None,
 )
 

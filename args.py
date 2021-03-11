@@ -80,10 +80,10 @@ class ModelArguments:
             "help": "Whether or not to try to load the fast version of the tokenizer."
         },
     )
-    model_revision: str = field(
+    revision: str = field(
         default="main",
         metadata={
-            "help": "The specific model version to use (can be a branch name, tag name or commit id)."
+            "help": "The specific model version to use. It can be a branch name, a tag name, or a commit id, since we use a git-based system for storing models and other artifacts on huggingface.co, so revision can be any identifier allowed by git."
         },
     )
     use_auth_token: bool = field(
