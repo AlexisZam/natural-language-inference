@@ -163,8 +163,7 @@ def compute_metrics(eval_prediction: EvalPrediction):
         eval_prediction.predictions[0]
         if isinstance(eval_prediction.predictions, tuple)
         else eval_prediction.predictions
-    )
-    predictions = predictions.argmax(axis=1)
+    ).argmax(axis=1)
     return metric.compute(predictions=predictions, references=eval_prediction.label_ids)
 
 
