@@ -1,17 +1,11 @@
-- [MNLI](https://arxiv.org/abs/1704.05426) (Multi-Genre Natural Language
-  Inference) Determine if a sentence entails, contradicts or is unrelated to a
-  given hypothesis. (This dataset has two versions, one with the validation and
-  test set coming from the same distribution, another called mismatched where
-  the validation and test use out-of-domain data.)
-- [QNLI](https://rajpurkar.github.io/SQuAD-explorer/) (Question-answering
-  Natural Language Inference) Determine if the answer to a question is in the
-  second sentence or not. (This dataset is built from the SQuAD dataset.)
-- [RTE](https://aclweb.org/aclwiki/Recognizing_Textual_Entailment) (Recognizing
-  Textual Entailment) Determine if a sentence entails a given hypothesis or not.
-- [WNLI](https://cs.nyu.edu/faculty/davise/papers/WinogradSchemas/WS.html)
-  (Winograd Natural Language Inference) Determine if a sentence with an
-  anonymous pronoun and a sentence with this pronoun replaced are entailed or
-  not. (This dataset is built from the Winograd Schema Challenge dataset.)
+[QNLI](https://rajpurkar.github.io/SQuAD-explorer/) (Question-answering Natural
+Language Inference) Determine if the answer to a question is in the second
+sentence or not. (This dataset is built from the SQuAD dataset.)
+
+[WNLI](https://cs.nyu.edu/faculty/davise/papers/WinogradSchemas/WS.html)
+(Winograd Natural Language Inference) Determine if a sentence with an anonymous
+pronoun and a sentence with this pronoun replaced are entailed or not. (This
+dataset is built from the Winograd Schema Challenge dataset.)
 
 This notebook is built to run on any of the tasks in the list above, with any
 model checkpoint from the [Model Hub](https://huggingface.co/models) as long as
@@ -49,12 +43,6 @@ The `tokenizer` has a pad method that will do all of this right for us, and the
 `Trainer` will use it. You can customize this part by defining and passing your
 own `data_collator` which will receive the samples like the dictionaries seen
 above and will need to return a dictionary of tensors.
-
-We can check with the `evaluate` method that our `Trainer` did reload the best
-model properly (if it was not the last one).
-
-You can try to find some good hyperparameter on a portion of the training
-dataset by replacing the `train_dataset` line above by:
 
 ```python
 train_dataset = train_dataset.shard(index=1, num_shards=10)
