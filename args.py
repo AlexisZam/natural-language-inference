@@ -15,7 +15,7 @@ task_names = (
 
 
 @dataclass
-class DataTrainingArguments:
+class DatasetArguments:
     """
     Arguments pertaining to what data we are going to input our model for
     training and eval.
@@ -38,7 +38,9 @@ class DataTrainingArguments:
     )
     load_from_cache_file: bool = field(
         default=True,
-        metadata={"help": "Overwrite the cached preprocessed datasets or not."},
+        metadata={
+            "help": "If a cache file storing the current computation from function can be identified, use it instead of recomputing."
+        },
     )
     pad_to_max_length: bool = field(
         default=True,
@@ -72,16 +74,10 @@ class ModelArguments:
             "help": "Pretrained tokenizer name or path if not the same as model_name"
         },
     )
-    cache_dir: Optional[str] = field(
-        default=None,
-        metadata={
-            "help": "Where do you want to store the pretrained models downloaded from huggingface.co"
-        },
-    )
-    use_fast_tokenizer: bool = field(
+    use_fast: bool = field(
         default=True,
         metadata={
-            "help": "Whether to use one of the fast tokenizer (backed by the tokenizers library) or not."
+            "help": "Whether or not to try to load the fast version of the tokenizer."
         },
     )
     model_revision: str = field(
