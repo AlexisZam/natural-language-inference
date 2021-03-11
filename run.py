@@ -1,7 +1,5 @@
 #!/usr/bin/env python
 
-from re import compile
-
 from datasets import ClassLabel, load_dataset, load_metric
 
 from args import DatasetArguments, ModelArguments, MyTrainingArguments
@@ -40,11 +38,9 @@ print(f"Training/evaluation parameters {training_arguments}")
 # Set seed before initializing model.
 set_seed(training_arguments.seed)
 
-anli_pattern = compile("^anli_r[1-3]$")
-
 datasets = (
     load_dataset("anli")
-    if anli_pattern.search(dataset_arguments.task_name) is not None
+    if dataset_arguments.task_name.startswith("anli")
     else load_dataset(dataset_arguments.task_name, "tsv_format")
     if dataset_arguments.task_name == "scitail"
     else load_dataset(dataset_arguments.task_name)
@@ -54,7 +50,7 @@ datasets = (
 
 num_labels = (
     datasets["train_r1"].features["label"].num_classes
-    if anli_pattern.search(dataset_arguments.task_name) is not None
+    if dataset_arguments.task_name.startswith("anli")
     else 2
     if dataset_arguments.task_name == "scitail"
     else datasets["train"].features["label"].num_classes
@@ -141,7 +137,7 @@ datasets = datasets.filter(
     load_from_cache_file=dataset_arguments.load_from_cache_file,
 )
 
-if anli_pattern.search(dataset_arguments.task_name) is not None:
+if dataset_arguments.task_name.startswith("anli"):
     round = dataset_arguments.task_name.split("_")[1]
     train_dataset = datasets[f"train_{round}"]
     eval_dataset = datasets[f"dev_{round}"]
