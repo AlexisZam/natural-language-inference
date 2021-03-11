@@ -59,7 +59,7 @@ class MyTrainer(Trainer):
                     print(f"  {key} = {value}")
                     print(f"{key} = {value}", file=file)
 
-    def my_predict(self, task_name, test_dataset, datasets, label_list):
+    def my_predict(self, task_name, test_dataset, datasets):
         tasks = [task_name]
         test_datasets = [test_dataset]
         if task_name == "mnli":
@@ -67,19 +67,20 @@ class MyTrainer(Trainer):
             test_datasets.append(datasets["test_mismatched"])
 
         for test_dataset, task in zip(test_datasets, tasks):
-            # Removing the `label` columns because it contains -1 and Trainer won't like that.
-            test_dataset = test_dataset.remove_columns("label")
-            predictions = self.predict(test_dataset=test_dataset).predictions
-            predictions = predictions.argmax(axis=1)
+            if len(test_dataset) == 0:
+                print(f"WARNING:{__name__}:Test dataset is empty.")
+                return
+                
+            metrics = self.predict(test_dataset=test_dataset).metrics
 
             output_test_file = PurePath(self.args.output_dir).joinpath(
                 f"prediction_results_{task}.txt"
             )
             with open(output_test_file, "w") as file:
                 print(f"***** Prediction results {task} *****")
-                print("index\tprediction", file=file)
-                for index, item in enumerate(predictions):
-                    print(f"{index}\t{label_list[item]}", file=file)
+                for key, value in sorted(metrics.items()):
+                    print(f"  {key} = {value}")
+                    print(f"{key} = {value}", file=file)
 
     def my_hyperparameter_search(self):
         hp_space = lambda trial: {

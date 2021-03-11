@@ -52,14 +52,13 @@ datasets = (
     else load_dataset("glue", dataset_arguments.task_name)
 )
 
-label_list = (
-    datasets["train_r1"].features["label"].names
+num_labels = (
+    datasets["train_r1"].features["label"].num_classes
     if anli_pattern.search(dataset_arguments.task_name) is not None
-    else ("entails", "neutral")
+    else 2
     if dataset_arguments.task_name == "scitail"
-    else datasets["train"].features["label"].names
+    else datasets["train"].features["label"].num_classes
 )
-num_labels = len(label_list)
 
 config = AutoConfig.from_pretrained(
     model_arguments.config_name
@@ -113,7 +112,7 @@ if dataset_arguments.max_length > tokenizer.model_max_length:
 max_length = min(dataset_arguments.max_length, tokenizer.model_max_length)
 
 if dataset_arguments.task_name == "scitail":
-    label = ClassLabel(names=label_list)
+    label = ClassLabel(names=("entails", "neutral"))
 
 
 def preprocess_function(examples):
@@ -137,11 +136,10 @@ datasets = datasets.map(
     load_from_cache_file=dataset_arguments.load_from_cache_file,
 )
 
-if dataset_arguments.task_name == "snli":
-    datasets = datasets.filter(
-        lambda example: example["label"] != -1,
-        load_from_cache_file=dataset_arguments.load_from_cache_file,
-    )
+datasets = datasets.filter(
+    lambda example: example["label"] != -1,
+    load_from_cache_file=dataset_arguments.load_from_cache_file,
+)
 
 if anli_pattern.search(dataset_arguments.task_name) is not None:
     round = dataset_arguments.task_name.split("_")[1]
@@ -199,4 +197,4 @@ if training_arguments.do_eval:
     trainer.my_evaluate(dataset_arguments.task_name, eval_dataset, datasets)
 
 if training_arguments.do_predict:
-    trainer.my_predict(dataset_arguments.task_name, test_dataset, datasets, label_list)
+    trainer.my_predict(dataset_arguments.task_name, test_dataset, datasets)
