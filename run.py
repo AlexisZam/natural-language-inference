@@ -114,24 +114,24 @@ max_length = min(dataset_arguments.max_length, tokenizer.model_max_length)
 if dataset_arguments.task_name == "scitail":
     label = ClassLabel(names=("entails", "neutral"))
 
+    def function(examples):
+        examples["label"] = label.str2int(examples["label"])
+        return examples
 
-def preprocess_function(examples):
-    result = tokenizer(
+    datasets = datasets.map(
+        function,
+        batched=True,
+        load_from_cache_file=dataset_arguments.load_from_cache_file,
+    )
+
+datasets = datasets.map(
+    lambda examples: tokenizer(
         examples[sentence1_key],
         text_pair=examples[sentence2_key],
         padding=padding,
         truncation=True,
         max_length=max_length,
-    )
-
-    if dataset_arguments.task_name == "scitail":
-        result["label"] = label.str2int(examples["label"])
-
-    return result
-
-
-datasets = datasets.map(
-    preprocess_function,
+    ),
     batched=True,
     load_from_cache_file=dataset_arguments.load_from_cache_file,
 )
