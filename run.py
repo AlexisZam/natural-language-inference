@@ -97,12 +97,12 @@ sentence1_key, sentence2_key = (
 
 padding = "max_length" if dataset_arguments.pad_to_max_length else False
 
-if dataset_arguments.max_seq_length > tokenizer.model_max_length:
+if dataset_arguments.max_length > tokenizer.model_max_length:
     print(
-        f"WARNING:{__name__}:The max_seq_length passed ({dataset_arguments.max_seq_length}) is larger than the maximum length for the model ({tokenizer.model_max_length}).",
-        f"Using max_seq_length={tokenizer.model_max_length}.",
+        f"WARNING:{__name__}:The max_length passed ({dataset_arguments.max_length}) is larger than the maximum length for the model ({tokenizer.model_max_length}).",
+        f"Using max_length={tokenizer.model_max_length}.",
     )
-max_seq_length = min(dataset_arguments.max_seq_length, tokenizer.model_max_length)
+max_length = min(dataset_arguments.max_length, tokenizer.model_max_length)
 
 if dataset_arguments.task_name == "scitail":
     label = ClassLabel(names=label_list)
@@ -111,10 +111,10 @@ if dataset_arguments.task_name == "scitail":
 def preprocess_function(examples):
     result = tokenizer(
         examples[sentence1_key],
-        examples[sentence2_key],
+        text_pair=examples[sentence2_key],
         padding=padding,
-        max_length=max_seq_length,
         truncation=True,
+        max_length=max_length,
     )
 
     if dataset_arguments.task_name == "scitail":
