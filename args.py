@@ -1,6 +1,8 @@
 from dataclasses import dataclass, field
 from typing import Optional
 
+from transformers import TrainingArguments
+
 task_names = (
     "anli_r1",
     "anli_r2",
@@ -91,4 +93,11 @@ class ModelArguments:
         metadata={
             "help": "Will use the token generated when running `transformers-cli login` (necessary to use this script with private models)."
         },
+    )
+
+
+@dataclass
+class MyTrainingArguments(TrainingArguments):
+    do_hyperparameter_search: bool = field(
+        default=False, metadata={"help": "Whether to run hyperparameter search."}
     )

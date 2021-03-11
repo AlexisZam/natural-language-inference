@@ -4,7 +4,7 @@ from re import compile
 
 from datasets import ClassLabel, load_dataset, load_metric
 
-from args import DatasetArguments, ModelArguments
+from args import DatasetArguments, ModelArguments, MyTrainingArguments
 from trainer import MyTrainer
 from transformers import (
     AutoConfig,
@@ -13,7 +13,6 @@ from transformers import (
     DataCollatorWithPadding,
     EvalPrediction,
     HfArgumentParser,
-    TrainingArguments,
     default_data_collator,
     set_seed,
 )
@@ -23,7 +22,7 @@ from transformers.utils.logging import (
     set_verbosity_info,
 )
 
-parser = HfArgumentParser((DatasetArguments, ModelArguments, TrainingArguments))
+parser = HfArgumentParser((DatasetArguments, ModelArguments, MyTrainingArguments))
 (
     dataset_arguments,
     model_arguments,
@@ -176,30 +175,26 @@ data_collator = (
     else None
 )
 
-trainer = MyTrainer(
-    model=model,
-    args=training_arguments,
-    train_dataset=train_dataset,
-    eval_dataset=eval_dataset if training_arguments.do_eval else None,
-    compute_metrics=compute_metrics,
-    tokenizer=tokenizer,
-    data_collator=data_collator,
+model_init = lambda: AutoModelForSequenceClassification.from_pretrained(
+    model_arguments.model_name_or_path,
+    config=config,
+    from_tf=bool(".ckpt" in model_arguments.model_name_or_path),
+    revision=model_arguments.revision,
+    use_auth_token=True if model_arguments.use_auth_token else None,
 )
 
-if False:
-    model_init = lambda: AutoModelForSequenceClassification.from_pretrained(
-        model_arguments.model_name_or_path, num_labels=num_labels
-    )
+trainer = MyTrainer(
+    model=None if training_arguments.do_hyperparameter_search else model,
+    args=training_arguments,
+    data_collator=data_collator,
+    train_dataset=train_dataset,
+    eval_dataset=eval_dataset if training_arguments.do_eval else None,
+    tokenizer=tokenizer,
+    model_init=model_init if training_arguments.do_hyperparameter_search else None,
+    compute_metrics=compute_metrics,
+)
 
-    trainer = MyTrainer(
-        model_init=model_init,
-        args=training_arguments,
-        train_dataset=train_dataset,
-        eval_dataset=eval_dataset if training_arguments.do_eval else None,
-        tokenizer=tokenizer,
-        compute_metrics=compute_metrics,
-    )
-
+if training_arguments.do_hyperparameter_search:
     trainer.my_hyperparameter_search()
 
 if training_arguments.do_train:
