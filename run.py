@@ -78,13 +78,22 @@ tokenizer = AutoTokenizer.from_pretrained(
     use_fast=model_arguments.use_fast,
     use_auth_token=True if model_arguments.use_auth_token else None,
 )
-model = AutoModelForSequenceClassification.from_pretrained(
-    model_arguments.model_name_or_path,
-    config=config,
-    from_tf=bool(".ckpt" in model_arguments.model_name_or_path),
-    revision=model_arguments.revision,
-    use_auth_token=True if model_arguments.use_auth_token else None,
-)
+if training_arguments.do_hyperparameter_search:
+    model_init = lambda: AutoModelForSequenceClassification.from_pretrained(
+        model_arguments.model_name_or_path,
+        config=config,
+        from_tf=bool(".ckpt" in model_arguments.model_name_or_path),
+        revision=model_arguments.revision,
+        use_auth_token=True if model_arguments.use_auth_token else None,
+    )
+else:
+    model = AutoModelForSequenceClassification.from_pretrained(
+        model_arguments.model_name_or_path,
+        config=config,
+        from_tf=bool(".ckpt" in model_arguments.model_name_or_path),
+        revision=model_arguments.revision,
+        use_auth_token=True if model_arguments.use_auth_token else None,
+    )
 
 sentence1_key, sentence2_key = (
     ("question", "sentence")
@@ -173,14 +182,6 @@ data_collator = (
     else DataCollatorWithPadding(tokenizer, pad_to_multiple_of=8)
     if training_arguments.fp16
     else None
-)
-
-model_init = lambda: AutoModelForSequenceClassification.from_pretrained(
-    model_arguments.model_name_or_path,
-    config=config,
-    from_tf=bool(".ckpt" in model_arguments.model_name_or_path),
-    revision=model_arguments.revision,
-    use_auth_token=True if model_arguments.use_auth_token else None,
 )
 
 trainer = MyTrainer(
