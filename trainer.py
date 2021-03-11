@@ -24,16 +24,9 @@ class MyTrainer(Trainer):
 
         metrics = self.train(resume_from_checkpoint=resume_from_checkpoint).metrics
 
-        self.save_model()  # Saves the tokenizer too for easy upload
+        self._print("training", metrics)
 
-        output_train_file = PurePath(self.args.output_dir).joinpath(
-            "training_results.txt"
-        )
-        with open(output_train_file, "w") as file:
-            print("***** Training results *****")
-            for key, value in sorted(metrics.items()):
-                print(f"  {key} = {value}")
-                print(f"{key} = {value}", file=file)
+        self.save_model()  # Saves the tokenizer too for easy upload
 
         # Need to save the state, since Trainer.save_model saves only the tokenizer with the model
         self.state.save_to_json(
@@ -50,37 +43,16 @@ class MyTrainer(Trainer):
         for eval_dataset, task in zip(eval_datasets, tasks):
             eval_result = self.evaluate(eval_dataset=eval_dataset)
 
-            output_eval_file = PurePath(self.args.output_dir).joinpath(
-                f"evaluation_results_{task}.txt"
-            )
-            with open(output_eval_file, "w") as file:
-                print(f"***** Evaluation results {task} *****")
-                for key, value in sorted(eval_result.items()):
-                    print(f"  {key} = {value}")
-                    print(f"{key} = {value}", file=file)
+            self._print("evaluation", eval_result, task=task)
 
-    def my_predict(self, task_name, test_dataset, datasets):
-        tasks = [task_name]
-        test_datasets = [test_dataset]
-        if task_name == "mnli":
-            tasks.append("mnli-mm")
-            test_datasets.append(datasets["test_mismatched"])
+    def my_predict(self, test_dataset):
+        if len(test_dataset) == 0:
+            print(f"WARNING:{__name__}:Test dataset is empty.")
+            return
 
-        for test_dataset, task in zip(test_datasets, tasks):
-            if len(test_dataset) == 0:
-                print(f"WARNING:{__name__}:Test dataset is empty.")
-                return
-                
-            metrics = self.predict(test_dataset=test_dataset).metrics
+        metrics = self.predict(test_dataset=test_dataset).metrics
 
-            output_test_file = PurePath(self.args.output_dir).joinpath(
-                f"prediction_results_{task}.txt"
-            )
-            with open(output_test_file, "w") as file:
-                print(f"***** Prediction results {task} *****")
-                for key, value in sorted(metrics.items()):
-                    print(f"  {key} = {value}")
-                    print(f"{key} = {value}", file=file)
+        self._print("prediction", metrics)
 
     def my_hyperparameter_search(self):
         hp_space = lambda trial: {
@@ -98,3 +70,17 @@ class MyTrainer(Trainer):
 
         for n, v in best_run.hyperparameters.items():
             setattr(self.args, n, v)
+
+    def _print(self, name, dict, task=None):
+        output_file = PurePath(self.args.output_dir).joinpath(
+            f"{name}_results" + ("" if task is None else f"_{task}") + ".txt"
+        )
+        with open(output_file, "w") as file:
+            print(
+                f"***** {name.title()} results"
+                + ("" if task is None else f" {task}")
+                + " *****"
+            )
+            for key, value in sorted(dict.items()):
+                print(f"  {key} = {value}")
+                print(f"{key} = {value}", file=file)

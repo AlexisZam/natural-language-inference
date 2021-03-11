@@ -197,4 +197,4 @@ if training_arguments.do_eval:
     trainer.my_evaluate(dataset_arguments.task_name, eval_dataset, datasets)
 
 if training_arguments.do_predict:
-    trainer.my_predict(dataset_arguments.task_name, test_dataset, datasets)
+    trainer.my_predict(test_dataset)
