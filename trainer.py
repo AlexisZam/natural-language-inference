@@ -29,11 +29,11 @@ class MyTrainer(Trainer):
         output_train_file = PurePath(self.args.output_dir).joinpath(
             "training_results.txt"
         )
-        with open(output_train_file, "w") as writer:
+        with open(output_train_file, "w") as file:
             print("***** Training results *****")
             for key, value in sorted(metrics.items()):
                 print(f"  {key} = {value}")
-                writer.write(f"{key} = {value}\n")
+                print(f"{key} = {value}", file=file)
 
         # Need to save the state, since Trainer.save_model saves only the tokenizer with the model
         self.state.save_to_json(
@@ -53,11 +53,11 @@ class MyTrainer(Trainer):
             output_eval_file = PurePath(self.args.output_dir).joinpath(
                 f"evaluation_results_{task}.txt"
             )
-            with open(output_eval_file, "w") as writer:
+            with open(output_eval_file, "w") as file:
                 print(f"***** Evaluation results {task} *****")
                 for key, value in sorted(eval_result.items()):
                     print(f"  {key} = {value}")
-                    writer.write(f"{key} = {value}\n")
+                    print(f"{key} = {value}", file=file)
 
     def my_predict(self, task_name, test_dataset, datasets, label_list):
         tasks = [task_name]
@@ -75,11 +75,11 @@ class MyTrainer(Trainer):
             output_test_file = PurePath(self.args.output_dir).joinpath(
                 f"prediction_results_{task}.txt"
             )
-            with open(output_test_file, "w") as writer:
+            with open(output_test_file, "w") as file:
                 print(f"***** Prediction results {task} *****")
-                writer.write("index\tprediction\n")
+                print("index\tprediction", file=file)
                 for index, item in enumerate(predictions):
-                    writer.write(f"{index}\t{label_list[item]}\n")
+                    print(f"{index}\t{label_list[item]}", file=file)
 
     def my_hyperparameter_search(self):
         hp_space = lambda trial: {
