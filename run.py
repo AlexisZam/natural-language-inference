@@ -137,12 +137,6 @@ datasets = datasets.map(
     load_from_cache_file=dataset_arguments.load_from_cache_file,
 )
 
-datasets = datasets.remove_columns(
-    "idx"
-    if dataset_arguments.task_name == "qnli"
-    else ("idx", "sentence1", "sentence2")
-)
-
 if dataset_arguments.task_name == "snli":
     datasets = datasets.filter(
         lambda example: example["label"] != -1,
