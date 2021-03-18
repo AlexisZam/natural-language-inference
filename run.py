@@ -49,7 +49,6 @@ num_labels = (
     if dataset_arguments.task_name == "scitail"
     else datasets["train"].features["label"].num_classes
 )
-
 config = AutoConfig.from_pretrained(
     model_arguments.model_name_or_path,
     num_labels=num_labels,
@@ -65,21 +64,6 @@ else:
         model_arguments.model_name_or_path, config=config
     )
 
-sentence1_key, sentence2_key = (
-    ("question", "sentence")
-    if dataset_arguments.task_name == "qnli"
-    else ("sentence1", "sentence2")
-    if dataset_arguments.task_name in ("rte", "wnli")
-    else ("premise", "hypothesis")
-)
-
-if dataset_arguments.max_length > tokenizer.model_max_length:
-    print(
-        f"WARNING:{__name__}:The max_length passed ({dataset_arguments.max_length}) is larger than the maximum length for the model ({tokenizer.model_max_length}).",
-        f"Using max_length={tokenizer.model_max_length}.",
-    )
-max_length = min(dataset_arguments.max_length, tokenizer.model_max_length)
-
 if dataset_arguments.task_name == "scitail":
     label = ClassLabel(names=("entails", "neutral"))
 
@@ -89,12 +73,24 @@ if dataset_arguments.task_name == "scitail":
 
     datasets = datasets.map(function, batched=True)
 
+sentence1_key, sentence2_key = (
+    ("question", "sentence")
+    if dataset_arguments.task_name == "qnli"
+    else ("sentence1", "sentence2")
+    if dataset_arguments.task_name in ("rte", "wnli")
+    else ("premise", "hypothesis")
+)
+if dataset_arguments.max_length > tokenizer.model_max_length:
+    print(
+        f"WARNING:{__name__}:The max_length passed ({dataset_arguments.max_length}) is larger than the maximum length for the model ({tokenizer.model_max_length}).",
+        f"Using max_length={tokenizer.model_max_length}.",
+    )
 function = lambda examples: tokenizer(
     examples[sentence1_key],
     text_pair=examples[sentence2_key],
     padding=dataset_arguments.padding,
     truncation=True,
-    max_length=max_length,
+    max_length=min(dataset_arguments.max_length, tokenizer.model_max_length),
 )
 datasets = datasets.map(function, batched=True)
 
