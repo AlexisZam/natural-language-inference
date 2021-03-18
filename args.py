@@ -41,7 +41,7 @@ class DatasetArguments:
 
 @dataclass
 class ModelArguments:
-    model_name_or_path: str = field(
+    pretrained_model_name_or_path: str = field(
         metadata={
             "help": "Path to pretrained model or model identifier from huggingface.co/models"
         }
@@ -52,4 +52,7 @@ class ModelArguments:
 class MyTrainingArguments(TrainingArguments):
     do_hyperparameter_search: bool = field(
         default=False, metadata={"help": "Whether to run hyperparameter search."}
+    )
+    n_trials: int = field(
+        default=20, metadata={"help": "The number of trial runs to test."}
     )

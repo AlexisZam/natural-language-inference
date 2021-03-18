@@ -39,15 +39,17 @@ with open("info.json") as fp:
 datasets = load_dataset(info["path"], name=info["name"])
 
 config = AutoConfig.from_pretrained(
-    model_arguments.model_name_or_path,
+    model_arguments.pretrained_model_name_or_path,
     num_labels=info["num_labels"],
     finetuning_task=dataset_arguments.task_name,
 )
-tokenizer = AutoTokenizer.from_pretrained(model_arguments.model_name_or_path)
+tokenizer = AutoTokenizer.from_pretrained(model_arguments.pretrained_model_name_or_path)
 model_init = lambda: AutoModelForSequenceClassification.from_pretrained(
-    model_arguments.model_name_or_path, config=config
+    model_arguments.pretrained_model_name_or_path, config=config
 )
 model = model_init()
+
+datasets = datasets.filter(lambda example: example["label"] != -1)
 
 if dataset_arguments.task_name == "scitail":
     label = ClassLabel(names=("entails", "neutral"))
@@ -71,8 +73,6 @@ function = lambda examples: tokenizer(
     max_length=min(dataset_arguments.max_length, tokenizer.model_max_length),
 )
 datasets = datasets.map(function, batched=True)
-
-datasets = datasets.filter(lambda example: example["label"] != -1)
 
 metric = load_metric("accuracy")
 
@@ -111,10 +111,10 @@ if training_arguments.do_hyperparameter_search:
     trainer.my_hyperparameter_search()
 
 if training_arguments.do_train:
-    trainer.my_train(model_arguments.model_name_or_path)
+    trainer.my_train(model_arguments.pretrained_model_name_or_path)
 
 if training_arguments.do_eval:
-    trainer.my_evaluate(datasets[info["eval_dataset"]])
+    trainer.my_evaluate()
 
 if training_arguments.do_predict:
     if info["test_dataset"] is None:

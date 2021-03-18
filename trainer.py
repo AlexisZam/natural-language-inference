@@ -5,7 +5,7 @@ from transformers.trainer_utils import get_last_checkpoint
 
 
 class MyTrainer(Trainer):
-    def my_train(self, model_name_or_path):
+    def my_train(self, pretrained_model_name_or_path):
         resume_from_checkpoint = None
         if Path(self.args.output_dir).is_dir() and not self.args.overwrite_output_dir:
             resume_from_checkpoint = get_last_checkpoint(self.args.output_dir)
@@ -19,8 +19,11 @@ class MyTrainer(Trainer):
                     f"Output directory ({self.args.output_dir}) already exists and is not empty.",
                     "Use --overwrite_output_dir to overcome.",
                 )
-        if resume_from_checkpoint is None and Path(model_name_or_path).is_dir():
-            resume_from_checkpoint = model_name_or_path
+        if (
+            resume_from_checkpoint is None
+            and Path(pretrained_model_name_or_path).is_dir()
+        ):
+            resume_from_checkpoint = pretrained_model_name_or_path
 
         metrics = self.train(resume_from_checkpoint=resume_from_checkpoint).metrics
         self._print("training", metrics)
@@ -31,12 +34,12 @@ class MyTrainer(Trainer):
             PurePath(self.args.output_dir).joinpath("trainer_state.json")
         )
 
-    def my_evaluate(self, eval_dataset):
-        eval_result = self.evaluate(eval_dataset=eval_dataset)
+    def my_evaluate(self):
+        eval_result = self.evaluate()
         self._print("evaluation", eval_result)
 
     def my_predict(self, test_dataset):
-        metrics = self.predict(test_dataset=test_dataset).metrics
+        metrics = self.predict(test_dataset).metrics
         self._print("prediction", metrics)
 
     def my_hyperparameter_search(self):
@@ -50,7 +53,7 @@ class MyTrainer(Trainer):
         }
 
         best_run = self.hyperparameter_search(
-            hp_space=hp_space, n_trials=10, direction="maximize"
+            hp_space=hp_space, n_trials=self.args.n_trials, direction="maximize"
         )
 
         for n, v in best_run.hyperparameters.items():
