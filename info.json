@@ -29,7 +29,7 @@
     "eval_dataset": "dev_r3",
     "test_dataset": "test_r3"
   },
-  "mnli": {
+  "mnli_matched": {
     "path": "glue",
     "name": "mnli",
     "num_labels": 3,
@@ -37,6 +37,16 @@
     "text_pair": "hypothesis",
     "train_dataset": "train",
     "eval_dataset": "validation_matched",
+    "test_dataset": null
+  },
+  "mnli_mismatched": {
+    "path": "glue",
+    "name": "mnli",
+    "num_labels": 3,
+    "text": "premise",
+    "text_pair": "hypothesis",
+    "train_dataset": "train",
+    "eval_dataset": "validation_mismatched",
     "test_dataset": null
   },
   "qnli": {

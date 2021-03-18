@@ -31,16 +31,9 @@ class MyTrainer(Trainer):
             PurePath(self.args.output_dir).joinpath("trainer_state.json")
         )
 
-    def my_evaluate(self, task_name, eval_dataset, datasets):
-        tasks = [task_name]
-        eval_datasets = [eval_dataset]
-        if task_name == "mnli":
-            tasks.append("mnli-mm")
-            eval_datasets.append(datasets["validation_mismatched"])
-
-        for eval_dataset, task in zip(eval_datasets, tasks):
-            eval_result = self.evaluate(eval_dataset=eval_dataset)
-            self._print("evaluation", eval_result, task=task)
+    def my_evaluate(self, eval_dataset):
+        eval_result = self.evaluate(eval_dataset=eval_dataset)
+        self._print("evaluation", eval_result)
 
     def my_predict(self, test_dataset):
         metrics = self.predict(test_dataset=test_dataset).metrics
@@ -63,16 +56,10 @@ class MyTrainer(Trainer):
         for n, v in best_run.hyperparameters.items():
             setattr(self.args, n, v)
 
-    def _print(self, name, dict, task=None):
-        output_file = PurePath(self.args.output_dir).joinpath(
-            f"{name}_results" + ("" if task is None else f"_{task}") + ".txt"
-        )
+    def _print(self, name, dict):
+        output_file = PurePath(self.args.output_dir).joinpath(f"{name}_results.txt")
         with open(output_file, "w") as file:
-            print(
-                f"***** {name.title()} results"
-                + ("" if task is None else f" {task}")
-                + " *****"
-            )
+            print(f"***** {name.title()} results *****")
             for key, value in sorted(dict.items()):
                 print(f"  {key} = {value}")
                 print(f"{key} = {value}", file=file)

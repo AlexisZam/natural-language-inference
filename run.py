@@ -82,7 +82,8 @@ def compute_metrics(eval_prediction):
         eval_prediction.predictions[0]
         if isinstance(eval_prediction.predictions, tuple)
         else eval_prediction.predictions
-    ).argmax(axis=1)
+    )
+    predictions = predictions.argmax(axis=1)
     return metric.compute(predictions=predictions, references=eval_prediction.label_ids)
 
 
@@ -113,9 +114,7 @@ if training_arguments.do_train:
     trainer.my_train(model_arguments.model_name_or_path)
 
 if training_arguments.do_eval:
-    trainer.my_evaluate(
-        dataset_arguments.task_name, datasets[info["eval_dataset"]], datasets
-    )
+    trainer.my_evaluate(datasets[info["eval_dataset"]])
 
 if training_arguments.do_predict:
     if info["test_dataset"] is None:
