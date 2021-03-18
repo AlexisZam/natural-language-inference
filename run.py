@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 
+from json import load
+
 from datasets import ClassLabel, load_dataset, load_metric
 
 from args import DatasetArguments, ModelArguments, MyTrainingArguments
@@ -31,34 +33,21 @@ enable_explicit_format()
 
 set_seed(training_arguments.seed)
 
-datasets = (
-    load_dataset("anli")
-    if dataset_arguments.task_name.startswith("anli")
-    else load_dataset("scitail", "tsv_format")
-    if dataset_arguments.task_name == "scitail"
-    else load_dataset("snli")
-    if dataset_arguments.task_name == "snli"
-    else load_dataset("glue", dataset_arguments.task_name)
-)
+with open("info.json") as fp:
+    info = load(fp)[dataset_arguments.task_name]
 
-num_labels = (
-    datasets["train_r1"].features["label"].num_classes
-    if dataset_arguments.task_name.startswith("anli")
-    else 2
-    if dataset_arguments.task_name == "scitail"
-    else datasets["train"].features["label"].num_classes
-)
+datasets = load_dataset(info["path"], name=info["name"])
+
 config = AutoConfig.from_pretrained(
     model_arguments.model_name_or_path,
-    num_labels=num_labels,
+    num_labels=info["num_labels"],
     finetuning_task=dataset_arguments.task_name,
 )
 tokenizer = AutoTokenizer.from_pretrained(model_arguments.model_name_or_path)
 model_init = lambda: AutoModelForSequenceClassification.from_pretrained(
     model_arguments.model_name_or_path, config=config
 )
-if not training_arguments.do_hyperparameter_search:
-    model = model_init()
+model = model_init()
 
 if dataset_arguments.task_name == "scitail":
     label = ClassLabel(names=("entails", "neutral"))
@@ -69,21 +58,14 @@ if dataset_arguments.task_name == "scitail":
 
     datasets = datasets.map(function, batched=True)
 
-sentence1_key, sentence2_key = (
-    ("question", "sentence")
-    if dataset_arguments.task_name == "qnli"
-    else ("sentence1", "sentence2")
-    if dataset_arguments.task_name in ("rte", "wnli")
-    else ("premise", "hypothesis")
-)
 if dataset_arguments.max_length > tokenizer.model_max_length:
     print(
         f"WARNING:{__name__}:The max_length passed ({dataset_arguments.max_length}) is larger than the maximum length for the model ({tokenizer.model_max_length}).",
         f"Using max_length={tokenizer.model_max_length}.",
     )
 function = lambda examples: tokenizer(
-    examples[sentence1_key],
-    text_pair=examples[sentence2_key],
+    examples[info["text"]],
+    text_pair=examples[info["text_pair"]],
     padding=dataset_arguments.padding,
     truncation=True,
     max_length=min(dataset_arguments.max_length, tokenizer.model_max_length),
@@ -91,20 +73,6 @@ function = lambda examples: tokenizer(
 datasets = datasets.map(function, batched=True)
 
 datasets = datasets.filter(lambda example: example["label"] != -1)
-
-if dataset_arguments.task_name.startswith("anli"):
-    round = dataset_arguments.task_name.split("_")[1]
-    train_dataset = datasets[f"train_{round}"]
-    eval_dataset = datasets[f"dev_{round}"]
-    test_dataset = datasets[f"test_{round}"]
-else:
-    train_dataset = datasets["train"]
-    eval_dataset = datasets[
-        "validation_matched" if dataset_arguments.task_name == "mnli" else "validation"
-    ]
-    test_dataset = datasets[
-        "test_matched" if dataset_arguments.task_name == "mnli" else "test"
-    ]
 
 metric = load_metric("accuracy")
 
@@ -131,8 +99,8 @@ trainer = MyTrainer(
     model=None if training_arguments.do_hyperparameter_search else model,
     args=training_arguments,
     data_collator=data_collator,
-    train_dataset=train_dataset,
-    eval_dataset=eval_dataset if training_arguments.do_eval else None,
+    train_dataset=datasets[info["train_dataset"]],
+    eval_dataset=datasets[info["eval_dataset"]] if training_arguments.do_eval else None,
     tokenizer=tokenizer,
     model_init=model_init if training_arguments.do_hyperparameter_search else None,
     compute_metrics=compute_metrics,
@@ -145,7 +113,11 @@ if training_arguments.do_train:
     trainer.my_train(model_arguments.model_name_or_path)
 
 if training_arguments.do_eval:
-    trainer.my_evaluate(dataset_arguments.task_name, eval_dataset, datasets)
+    trainer.my_evaluate(
+        dataset_arguments.task_name, datasets[info["eval_dataset"]], datasets
+    )
 
 if training_arguments.do_predict:
-    trainer.my_predict(test_dataset)
+    if info["test_dataset"] is None:
+        raise ValueError("Test dataset is empty.")
+    trainer.my_predict(datasets[info["test_dataset"]])

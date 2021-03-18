@@ -27,7 +27,6 @@ class MyTrainer(Trainer):
 
         # Saves the tokenizer too for easy upload
         self.save_model()
-        # Need to save the state, since Trainer.save_model saves only the tokenizer with the model
         self.state.save_to_json(
             PurePath(self.args.output_dir).joinpath("trainer_state.json")
         )
@@ -44,10 +43,6 @@ class MyTrainer(Trainer):
             self._print("evaluation", eval_result, task=task)
 
     def my_predict(self, test_dataset):
-        if len(test_dataset) == 0:
-            print(f"WARNING:{__name__}:Test dataset is empty.")
-            return
-
         metrics = self.predict(test_dataset=test_dataset).metrics
         self._print("prediction", metrics)
 
