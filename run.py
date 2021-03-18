@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 
-from datasets import ClassLabel, load_dataset, load_metric
+from datasets import load_metric
 
 from args import DatasetArguments, ModelArguments, MyTrainingArguments
-from dataset_info_dict import dataset_info_dict
+from load_dataset import my_load_dataset
 from trainer import MyTrainer
 from transformers import (
     AutoConfig,
@@ -27,8 +27,6 @@ set_verbosity_info()
 dataset_arguments, model_arguments, training_arguments = HfArgumentParser(
     (DatasetArguments, ModelArguments, MyTrainingArguments)
 ).parse_args_into_dataclasses()
-# print(f"Device: {training_arguments.device}")
-# print(f"Training/evaluation parameters {training_arguments}")
 
 set_seed(training_arguments.seed)
 
@@ -43,6 +41,7 @@ model_init = lambda: AutoModelForSequenceClassification.from_pretrained(
 
 tokenizer = AutoTokenizer.from_pretrained(model_arguments.pretrained_model_name_or_path)
 
+# FIXME
 # Data collator will default to DataCollatorWithPadding, so we change it if we already did the padding.
 data_collator = (
     default_data_collator
@@ -50,34 +49,9 @@ data_collator = (
     else DataCollatorWithPadding(tokenizer, pad_to_multiple_of=8)
     if training_arguments.fp16
     else None
-)  # FIXME
-
-dataset_info = dataset_info_dict[dataset_arguments.dataset_name]
-# if dataset_arguments.max_length > tokenizer.model_max_length:
-#     print(
-#         f"WARNING:{__name__}:The max_length passed ({dataset_arguments.max_length}) is larger than the maximum length for the model ({tokenizer.model_max_length}).",
-#         f"Using max_length={tokenizer.model_max_length}.",
-#     )
-function = lambda batch: tokenizer(
-    batch[dataset_info["text"]],
-    text_pair=batch[dataset_info["text_pair"]],
-    padding=dataset_arguments.padding,
-    truncation=True,
-    max_length=min(dataset_arguments.max_length, tokenizer.model_max_length),
-)  # FIXME
-dataset_dict = (
-    load_dataset(dataset_info["path"], name=dataset_info["name"])
-    .filter(lambda example: example["label"] != -1)
-    .map(function, batched=True)
 )
-# if dataset_arguments.dataset_name == "scitail":
-#     label = ClassLabel(names=("entails", "neutral"))
 
-#     def function(examples):
-#         examples["label"] = label.str2int(examples["label"])
-#         return examples
-
-#     dataset_dict = dataset_dict.map(function, batched=True)
+dataset_dict = my_load_dataset(dataset_arguments, tokenizer)  # FIXME
 
 metric = load_metric("accuracy")
 compute_metrics = lambda eval_prediction: metric.compute(
@@ -93,10 +67,8 @@ trainer = MyTrainer(
     model=None if training_arguments.do_hyperparameter_search else model_init(),
     args=training_arguments,
     data_collator=data_collator,
-    train_dataset=dataset_dict[dataset_info["train_dataset"]],
-    eval_dataset=dataset_dict[dataset_info["eval_dataset"]]
-    if training_arguments.do_eval
-    else None,  # FIXME
+    train_dataset=dataset_dict["train"],
+    eval_dataset=dataset_dict["eval"] if training_arguments.do_eval else None,
     tokenizer=tokenizer,
     model_init=model_init if training_arguments.do_hyperparameter_search else None,
     compute_metrics=compute_metrics,
@@ -112,6 +84,7 @@ if training_arguments.do_eval:
     trainer.my_evaluate()
 
 if training_arguments.do_predict:
-    # if dataset_info["test_dataset"] is None:
-    #     raise ValueError("Test dataset is empty.")
-    trainer.my_predict(dataset_dict[dataset_info["test_dataset"]])  # FIXME
+    # FIXME
+    if dataset_dict["test"] is None:
+        raise ValueError("Test dataset is empty.")
+    trainer.my_predict(dataset_dict["test"])
