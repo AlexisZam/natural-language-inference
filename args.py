@@ -29,10 +29,11 @@ class DatasetArguments:
             "help": "The maximum total input sequence length after tokenization. Sequences longer than this will be truncated, sequences shorter will be padded."
         },
     )
-    pad_to_max_length: bool = field(
-        default=True,
+    padding: str = field(
+        default="max_length",
         metadata={
-            "help": "Whether to pad all samples to `max_length`. If False, will pad the samples dynamically when batching to the maximum length in the batch."
+            "choices": ("do_not_pad", "max_length"),
+            "help": "Whether to pad all samples to `max_length`. If False, will pad the samples dynamically when batching to the maximum length in the batch.",
         },
     )
 

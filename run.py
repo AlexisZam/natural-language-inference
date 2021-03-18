@@ -19,12 +19,9 @@ from transformers.utils.logging import (
     set_verbosity_info,
 )
 
-parser = HfArgumentParser((DatasetArguments, ModelArguments, MyTrainingArguments))
-(
-    dataset_arguments,
-    model_arguments,
-    training_arguments,
-) = parser.parse_args_into_dataclasses()
+dataset_arguments, model_arguments, training_arguments = HfArgumentParser(
+    (DatasetArguments, ModelArguments, MyTrainingArguments)
+).parse_args_into_dataclasses()
 
 # Log on each process the small summary:
 print(f"Device: {training_arguments.device}")
@@ -61,15 +58,11 @@ config = AutoConfig.from_pretrained(
 tokenizer = AutoTokenizer.from_pretrained(model_arguments.model_name_or_path)
 if training_arguments.do_hyperparameter_search:
     model_init = lambda: AutoModelForSequenceClassification.from_pretrained(
-        model_arguments.model_name_or_path,
-        config=config,
-        from_tf=bool(".ckpt" in model_arguments.model_name_or_path),
+        model_arguments.model_name_or_path, config=config
     )
 else:
     model = AutoModelForSequenceClassification.from_pretrained(
-        model_arguments.model_name_or_path,
-        config=config,
-        from_tf=bool(".ckpt" in model_arguments.model_name_or_path),
+        model_arguments.model_name_or_path, config=config
     )
 
 sentence1_key, sentence2_key = (
@@ -79,8 +72,6 @@ sentence1_key, sentence2_key = (
     if dataset_arguments.task_name in ("rte", "wnli")
     else ("premise", "hypothesis")
 )
-
-padding = "max_length" if dataset_arguments.pad_to_max_length else False
 
 if dataset_arguments.max_length > tokenizer.model_max_length:
     print(
@@ -98,16 +89,14 @@ if dataset_arguments.task_name == "scitail":
 
     datasets = datasets.map(function, batched=True)
 
-datasets = datasets.map(
-    lambda examples: tokenizer(
-        examples[sentence1_key],
-        text_pair=examples[sentence2_key],
-        padding=padding,
-        truncation=True,
-        max_length=max_length,
-    ),
-    batched=True,
+function = lambda examples: tokenizer(
+    examples[sentence1_key],
+    text_pair=examples[sentence2_key],
+    padding=dataset_arguments.padding,
+    truncation=True,
+    max_length=max_length,
 )
+datasets = datasets.map(function, batched=True)
 
 datasets = datasets.filter(lambda example: example["label"] != -1)
 
@@ -140,7 +129,7 @@ def compute_metrics(eval_prediction):
 # Data collator will default to DataCollatorWithPadding, so we change it if we already did the padding.
 data_collator = (
     default_data_collator
-    if dataset_arguments.pad_to_max_length
+    if dataset_arguments.padding == "max_length"
     else DataCollatorWithPadding(tokenizer, pad_to_multiple_of=8)
     if training_arguments.fp16
     else None
