@@ -22,22 +22,21 @@ from transformers.utils.logging import (
 dataset_arguments, model_arguments, training_arguments = HfArgumentParser(
     (DatasetArguments, ModelArguments, MyTrainingArguments)
 ).parse_args_into_dataclasses()
-
-# Log on each process the small summary:
 print(f"Device: {training_arguments.device}")
+print(f"Training/evaluation parameters {training_arguments}")
+
 set_verbosity_info()
 enable_default_handler()
 enable_explicit_format()
-print(f"Training/evaluation parameters {training_arguments}")
 
 set_seed(training_arguments.seed)
 
 datasets = (
     load_dataset("anli")
     if dataset_arguments.task_name.startswith("anli")
-    else load_dataset(dataset_arguments.task_name, "tsv_format")
+    else load_dataset("scitail", "tsv_format")
     if dataset_arguments.task_name == "scitail"
-    else load_dataset(dataset_arguments.task_name)
+    else load_dataset("snli")
     if dataset_arguments.task_name == "snli"
     else load_dataset("glue", dataset_arguments.task_name)
 )
@@ -55,14 +54,11 @@ config = AutoConfig.from_pretrained(
     finetuning_task=dataset_arguments.task_name,
 )
 tokenizer = AutoTokenizer.from_pretrained(model_arguments.model_name_or_path)
-if training_arguments.do_hyperparameter_search:
-    model_init = lambda: AutoModelForSequenceClassification.from_pretrained(
-        model_arguments.model_name_or_path, config=config
-    )
-else:
-    model = AutoModelForSequenceClassification.from_pretrained(
-        model_arguments.model_name_or_path, config=config
-    )
+model_init = lambda: AutoModelForSequenceClassification.from_pretrained(
+    model_arguments.model_name_or_path, config=config
+)
+if not training_arguments.do_hyperparameter_search:
+    model = model_init()
 
 if dataset_arguments.task_name == "scitail":
     label = ClassLabel(names=("entails", "neutral"))

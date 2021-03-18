@@ -23,11 +23,10 @@ class MyTrainer(Trainer):
             resume_from_checkpoint = model_name_or_path
 
         metrics = self.train(resume_from_checkpoint=resume_from_checkpoint).metrics
-
         self._print("training", metrics)
 
-        self.save_model()  # Saves the tokenizer too for easy upload
-
+        # Saves the tokenizer too for easy upload
+        self.save_model()
         # Need to save the state, since Trainer.save_model saves only the tokenizer with the model
         self.state.save_to_json(
             PurePath(self.args.output_dir).joinpath("trainer_state.json")
@@ -42,7 +41,6 @@ class MyTrainer(Trainer):
 
         for eval_dataset, task in zip(eval_datasets, tasks):
             eval_result = self.evaluate(eval_dataset=eval_dataset)
-
             self._print("evaluation", eval_result, task=task)
 
     def my_predict(self, test_dataset):
@@ -51,7 +49,6 @@ class MyTrainer(Trainer):
             return
 
         metrics = self.predict(test_dataset=test_dataset).metrics
-
         self._print("prediction", metrics)
 
     def my_hyperparameter_search(self):
