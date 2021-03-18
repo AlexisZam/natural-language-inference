@@ -9,7 +9,6 @@ from transformers import (
     AutoModelForSequenceClassification,
     AutoTokenizer,
     DataCollatorWithPadding,
-    EvalPrediction,
     HfArgumentParser,
     default_data_collator,
     set_seed,
@@ -29,13 +28,11 @@ parser = HfArgumentParser((DatasetArguments, ModelArguments, MyTrainingArguments
 
 # Log on each process the small summary:
 print(f"Device: {training_arguments.device}")
-# Set the verbosity to info of the Transformers logger:
 set_verbosity_info()
 enable_default_handler()
 enable_explicit_format()
 print(f"Training/evaluation parameters {training_arguments}")
 
-# Set seed before initializing model.
 set_seed(training_arguments.seed)
 
 datasets = (
@@ -57,37 +54,22 @@ num_labels = (
 )
 
 config = AutoConfig.from_pretrained(
-    model_arguments.config_name
-    if model_arguments.config_name
-    else model_arguments.model_name_or_path,
-    revision=model_arguments.revision,
+    model_arguments.model_name_or_path,
     num_labels=num_labels,
     finetuning_task=dataset_arguments.task_name,
-    use_auth_token=True if model_arguments.use_auth_token else None,
 )
-tokenizer = AutoTokenizer.from_pretrained(
-    model_arguments.tokenizer_name
-    if model_arguments.tokenizer_name
-    else model_arguments.model_name_or_path,
-    revision=model_arguments.revision,
-    use_fast=model_arguments.use_fast,
-    use_auth_token=True if model_arguments.use_auth_token else None,
-)
+tokenizer = AutoTokenizer.from_pretrained(model_arguments.model_name_or_path)
 if training_arguments.do_hyperparameter_search:
     model_init = lambda: AutoModelForSequenceClassification.from_pretrained(
         model_arguments.model_name_or_path,
         config=config,
         from_tf=bool(".ckpt" in model_arguments.model_name_or_path),
-        revision=model_arguments.revision,
-        use_auth_token=True if model_arguments.use_auth_token else None,
     )
 else:
     model = AutoModelForSequenceClassification.from_pretrained(
         model_arguments.model_name_or_path,
         config=config,
         from_tf=bool(".ckpt" in model_arguments.model_name_or_path),
-        revision=model_arguments.revision,
-        use_auth_token=True if model_arguments.use_auth_token else None,
     )
 
 sentence1_key, sentence2_key = (
@@ -114,11 +96,7 @@ if dataset_arguments.task_name == "scitail":
         examples["label"] = label.str2int(examples["label"])
         return examples
 
-    datasets = datasets.map(
-        function,
-        batched=True,
-        load_from_cache_file=dataset_arguments.load_from_cache_file,
-    )
+    datasets = datasets.map(function, batched=True)
 
 datasets = datasets.map(
     lambda examples: tokenizer(
@@ -129,13 +107,9 @@ datasets = datasets.map(
         max_length=max_length,
     ),
     batched=True,
-    load_from_cache_file=dataset_arguments.load_from_cache_file,
 )
 
-datasets = datasets.filter(
-    lambda example: example["label"] != -1,
-    load_from_cache_file=dataset_arguments.load_from_cache_file,
-)
+datasets = datasets.filter(lambda example: example["label"] != -1)
 
 if dataset_arguments.task_name.startswith("anli"):
     round = dataset_arguments.task_name.split("_")[1]
@@ -154,7 +128,7 @@ else:
 metric = load_metric("accuracy")
 
 
-def compute_metrics(eval_prediction: EvalPrediction):
+def compute_metrics(eval_prediction):
     predictions = (
         eval_prediction.predictions[0]
         if isinstance(eval_prediction.predictions, tuple)
