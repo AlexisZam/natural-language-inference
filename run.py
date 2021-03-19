@@ -78,7 +78,7 @@ if training_arguments.do_hyperparameter_search:
     trainer.my_hyperparameter_search()
 
 if training_arguments.do_train:
-    trainer.my_train(model_arguments.pretrained_model_name_or_path)
+    trainer.my_train()
 
 if training_arguments.do_eval:
     trainer.my_evaluate()
