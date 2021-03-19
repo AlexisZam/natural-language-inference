@@ -6,13 +6,6 @@ from dataset_info_dict import dataset_info_dict
 def my_load_dataset(dataset_arguments, tokenizer):
     dataset_info = dataset_info_dict[dataset_arguments.dataset_name]
 
-    # FIXME
-    if dataset_arguments.max_length > tokenizer.model_max_length:
-        print(
-            f"WARNING:{__name__}:The max_length passed ({dataset_arguments.max_length}) is larger than the maximum length for the model ({tokenizer.model_max_length}).",
-            f"Using max_length={tokenizer.model_max_length}.",
-        )
-
     function = lambda batch: tokenizer(
         batch[dataset_info["text"]],
         text_pair=batch[dataset_info["text_pair"]],
@@ -37,11 +30,8 @@ def my_load_dataset(dataset_arguments, tokenizer):
 
         dataset_dict = dataset_dict.map(function, batched=True)
 
-    # FIXME
     return {
         "train": dataset_dict[dataset_info["train"]],
         "eval": dataset_dict[dataset_info["eval"]],
-        "test": None
-        if dataset_info["test"] is None
-        else dataset_dict[dataset_info["test"]],
+        "test": dataset_dict.get(dataset_info["test"]),
     }

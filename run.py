@@ -84,7 +84,4 @@ if training_arguments.do_eval:
     trainer.my_evaluate()
 
 if training_arguments.do_predict:
-    # FIXME
-    if dataset_dict["test"] is None:
-        raise ValueError("Test dataset is empty.")
     trainer.my_predict(dataset_dict["test"])

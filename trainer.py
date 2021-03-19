@@ -11,7 +11,6 @@ class MyTrainer(Trainer):
         self._print_metrics("train", metrics)
         self.save_metrics("train", metrics)
 
-        # Saves the tokenizer too for easy upload
         self.save_model()
         self.save_state()
 
