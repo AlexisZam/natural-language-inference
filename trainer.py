@@ -13,12 +13,10 @@ class MyTrainer(Trainer):
             if resume_from_checkpoint is not None:
                 print(
                     f"Checkpoint detected, resuming training at {resume_from_checkpoint}.",
-                    "To avoid this behavior, change the `--output_dir` or add `--overwrite_output_dir` to train from scratch.",
                 )
             elif any(Path(self.args.output_dir).iterdir()):
                 raise ValueError(
                     f"Output directory ({self.args.output_dir}) already exists and is not empty.",
-                    "Use --overwrite_output_dir to overcome.",
                 )
         if (
             resume_from_checkpoint is None

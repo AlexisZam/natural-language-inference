@@ -1,5 +1,5 @@
 datasets
--e git+https://github.com/huggingface/transformers#egg=transformers
+transformers
 
 optuna
 
