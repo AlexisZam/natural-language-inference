@@ -5,24 +5,10 @@ from transformers.trainer_utils import get_last_checkpoint
 
 
 class MyTrainer(Trainer):
-    def my_train(self, pretrained_model_name_or_path):
-        # FIXME
-        resume_from_checkpoint = None
-        if Path(self.args.output_dir).is_dir() and not self.args.overwrite_output_dir:
-            resume_from_checkpoint = get_last_checkpoint(self.args.output_dir)
-            if resume_from_checkpoint is not None:
-                print(
-                    f"Checkpoint detected, resuming training at {resume_from_checkpoint}.",
-                )
-            elif any(Path(self.args.output_dir).iterdir()):
-                raise ValueError(
-                    f"Output directory ({self.args.output_dir}) already exists and is not empty.",
-                )
-        if (
-            resume_from_checkpoint is None
-            and Path(pretrained_model_name_or_path).is_dir()
-        ):
-            resume_from_checkpoint = pretrained_model_name_or_path
+    def my_train(self, pretrained_model_name_or_path):  # FIXME
+        resume_from_checkpoint = self._my_get_last_checkpoint(
+            pretrained_model_name_or_path
+        )
 
         metrics = self.train(resume_from_checkpoint=resume_from_checkpoint).metrics
         self._print_metrics("train", metrics)
@@ -58,6 +44,23 @@ class MyTrainer(Trainer):
 
         for n, v in best_run.hyperparameters.items():
             setattr(self.args, n, v)
+
+    def _my_get_last_checkpoint(self, pretrained_model_name_or_path):
+        # FIXME
+        path = Path(self.args.output_dir)
+        if path.is_dir() and not self.args.overwrite_output_dir:
+            resume_from_checkpoint = get_last_checkpoint(self.args.output_dir)
+            if resume_from_checkpoint is not None:
+                print(
+                    f"Checkpoint detected, resuming training at {resume_from_checkpoint}."
+                )
+                return resume_from_checkpoint
+            if any(path.iterdir()):
+                raise ValueError(
+                    f"Output directory ({self.args.output_dir}) already exists and is not empty."
+                )
+        if Path(pretrained_model_name_or_path).is_dir():
+            return pretrained_model_name_or_path
 
     @staticmethod
     def _print_metrics(split, metrics):
