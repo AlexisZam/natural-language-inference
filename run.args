@@ -1,12 +1,10 @@
---task_name rte
---max_seq_length 128
+--dataset_name rte
 
---model_name_or_path bert-base-cased
+--pretrained_model_name bert-base-cased
 
 --output_dir /tmp/rte/
 --do_train
 --do_eval
 --per_device_train_batch_size 32
 --learning_rate 2e-5
---num_train_epochs 3
 --fp16
