@@ -4,8 +4,11 @@ from transformers.trainer_utils import get_last_checkpoint
 
 class MyTrainer(Trainer):
     def my_train(self):
-        if not self.args.overwrite_output_dir:
-            resume_from_checkpoint = get_last_checkpoint(self.args.output_dir)
+        resume_from_checkpoint = (
+            None
+            if self.args.overwrite_output_dir
+            else get_last_checkpoint(self.args.output_dir)
+        )
 
         metrics = self.train(resume_from_checkpoint=resume_from_checkpoint).metrics
         self._print_metrics("train", metrics)

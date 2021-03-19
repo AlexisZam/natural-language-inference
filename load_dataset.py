@@ -9,10 +9,10 @@ def my_load_dataset(dataset_arguments, tokenizer):
     function = lambda batch: tokenizer(
         batch[dataset_info["text"]],
         text_pair=batch[dataset_info["text_pair"]],
-        padding=dataset_arguments.padding,
+        padding="max_length",
         truncation=True,
-        max_length=min(dataset_arguments.max_length, tokenizer.model_max_length),
-    )  # FIXME
+        max_length=min(128, tokenizer.model_max_length),
+    )
 
     dataset_dict = (
         load_dataset(dataset_info["path"], name=dataset_info["name"])

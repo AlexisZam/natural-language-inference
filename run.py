@@ -6,10 +6,8 @@ from args import DatasetArguments, ModelArguments, MyTrainingArguments
 from load_dataset import my_load_dataset
 from trainer import MyTrainer
 from transformers import (
-    AutoConfig,
     AutoModelForSequenceClassification,
     AutoTokenizer,
-    DataCollatorWithPadding,
     HfArgumentParser,
     default_data_collator,
     set_seed,
@@ -30,29 +28,13 @@ dataset_arguments, model_arguments, training_arguments = HfArgumentParser(
 
 set_seed(training_arguments.seed)
 
-# FIXME
-# config = AutoConfig.from_pretrained(
-#     model_arguments.pretrained_model_name,
-#     num_labels=dataset_info["num_labels"],
-#     finetuning_task=dataset_arguments.dataset_name,
-# )
 model_init = lambda: AutoModelForSequenceClassification.from_pretrained(
     model_arguments.pretrained_model_name
 )
 
 tokenizer = AutoTokenizer.from_pretrained(model_arguments.pretrained_model_name)
 
-# FIXME
-# Data collator will default to DataCollatorWithPadding, so we change it if we already did the padding.
-data_collator = (
-    default_data_collator
-    if dataset_arguments.padding == "max_length"
-    else DataCollatorWithPadding(tokenizer, pad_to_multiple_of=8)
-    if training_arguments.fp16
-    else None
-)
-
-dataset_dict = my_load_dataset(dataset_arguments, tokenizer)  # FIXME
+dataset_dict = my_load_dataset(dataset_arguments, tokenizer)
 
 metric = load_metric("accuracy")
 compute_metrics = lambda eval_prediction: metric.compute(
@@ -63,7 +45,7 @@ compute_metrics = lambda eval_prediction: metric.compute(
 trainer = MyTrainer(
     model=None if training_arguments.do_hyperparameter_search else model_init(),
     args=training_arguments,
-    data_collator=data_collator,
+    data_collator=default_data_collator,
     train_dataset=dataset_dict["train"],
     eval_dataset=dataset_dict["eval"] if training_arguments.do_eval else None,
     tokenizer=tokenizer,

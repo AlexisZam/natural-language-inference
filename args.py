@@ -12,19 +12,6 @@ class DatasetArguments:
             "help": "The name of the dataset to train on.",  # FIXME
         },
     )
-    max_length: int = field(
-        default=128,
-        metadata={
-            "help": "The maximum total input sequence length after tokenization. Sequences longer than this will be truncated, sequences shorter will be padded."
-        },
-    )  # FIXME
-    padding: str = field(
-        default="max_length",
-        metadata={
-            "choices": ("do_not_pad", "max_length"),
-            "help": "Whether to pad all samples to `max_length`. If do_not_pad, will pad the samples dynamically when batching to the maximum length in the batch.",
-        },
-    )  # FIXME
 
 
 @dataclass
