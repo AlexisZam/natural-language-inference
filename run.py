@@ -55,13 +55,9 @@ dataset_dict = my_load_dataset(dataset_arguments, tokenizer)  # FIXME
 
 metric = load_metric("accuracy")
 compute_metrics = lambda eval_prediction: metric.compute(
-    predictions=(
-        eval_prediction.predictions[0]
-        if isinstance(eval_prediction.predictions, tuple)
-        else eval_prediction.predictions
-    ).argmax(axis=1),
+    predictions=(eval_prediction.predictions).argmax(axis=1),
     references=eval_prediction.label_ids,
-)  # FIXME
+)
 
 trainer = MyTrainer(
     model=None if training_arguments.do_hyperparameter_search else model_init(),
