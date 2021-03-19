@@ -1,10 +1,6 @@
 #!/usr/bin/env python
 
 from datasets import load_metric
-
-from args import DatasetArguments, ModelArguments, MyTrainingArguments
-from load_dataset import my_load_dataset
-from trainer import MyTrainer
 from transformers import (
     AutoConfig,
     AutoModelForSequenceClassification,
@@ -18,6 +14,10 @@ from transformers.utils.logging import (
     enable_explicit_format,
     set_verbosity_info,
 )
+
+from args import DatasetArguments, ModelArguments, MyTrainingArguments
+from load_dataset import my_load_dataset
+from trainer import MyTrainer
 
 enable_default_handler()
 enable_explicit_format()

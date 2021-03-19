@@ -1,7 +1,8 @@
 from dataclasses import dataclass, field
 
-from dataset_info_dict import dataset_info_dict
 from transformers import TrainingArguments
+
+from dataset_info_dict import dataset_info_dict
 
 
 @dataclass
