@@ -30,16 +30,17 @@ dataset_arguments, model_arguments, training_arguments = HfArgumentParser(
 
 set_seed(training_arguments.seed)
 
+# FIXME
 # config = AutoConfig.from_pretrained(
-#     model_arguments.pretrained_model_name_or_path,
+#     model_arguments.pretrained_model_name,
 #     num_labels=dataset_info["num_labels"],
 #     finetuning_task=dataset_arguments.dataset_name,
 # )
 model_init = lambda: AutoModelForSequenceClassification.from_pretrained(
-    model_arguments.pretrained_model_name_or_path  # , config=config
+    model_arguments.pretrained_model_name
 )
 
-tokenizer = AutoTokenizer.from_pretrained(model_arguments.pretrained_model_name_or_path)
+tokenizer = AutoTokenizer.from_pretrained(model_arguments.pretrained_model_name)
 
 # FIXME
 # Data collator will default to DataCollatorWithPadding, so we change it if we already did the padding.

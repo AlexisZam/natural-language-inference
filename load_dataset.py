@@ -20,12 +20,11 @@ def my_load_dataset(dataset_arguments, tokenizer):
         .map(function, batched=True)
     )
 
-    # FIXME
     if dataset_arguments.dataset_name == "scitail":
-        label = ClassLabel(names=("entails", "neutral"))
+        class_label = ClassLabel(names=("entails", "neutral"))
 
         def function(batch):
-            batch["label"] = label.str2int(batch["label"])
+            batch["label"] = class_label.str2int(batch["label"])
             return batch
 
         dataset_dict = dataset_dict.map(function, batched=True)

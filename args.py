@@ -9,7 +9,7 @@ class DatasetArguments:
     dataset_name: str.lower = field(
         metadata={
             "choices": dataset_info_dict.keys(),
-            # "help": "The name of the task to train on: " + ", ".join(dataset_names),
+            "help": "The name of the dataset to train on.",  # FIXME
         },
     )
     max_length: int = field(
@@ -29,9 +29,9 @@ class DatasetArguments:
 
 @dataclass
 class ModelArguments:
-    pretrained_model_name_or_path: str = field(
+    pretrained_model_name: str = field(
         metadata={
-            # "help": "Path to pretrained model or model identifier from huggingface.co/models"
+            "help": "A string, the model id of a pretrained model configuration hosted inside a model repo on huggingface.co. Valid model ids can be located at the root-level, like bert-base-uncased, or namespaced under a user or organization name, like dbmdz/bert-base-german-cased."
         }
     )
 
