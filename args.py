@@ -9,7 +9,7 @@ class DatasetArguments:
     dataset_name: str.lower = field(
         metadata={
             "choices": dataset_info_dict.keys(),
-            "help": "The name of the dataset to train on.",  # FIXME
+            "help": "The name of the dataset.",
         },
     )
 
