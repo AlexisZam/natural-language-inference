@@ -6,6 +6,7 @@ from args import DatasetArguments, ModelArguments, MyTrainingArguments
 from load_dataset import my_load_dataset
 from trainer import MyTrainer
 from transformers import (
+    AutoConfig,
     AutoModelForSequenceClassification,
     AutoTokenizer,
     HfArgumentParser,
@@ -28,13 +29,21 @@ dataset_arguments, model_arguments, training_arguments = HfArgumentParser(
 
 set_seed(training_arguments.seed)
 
-model_init = lambda: AutoModelForSequenceClassification.from_pretrained(
-    model_arguments.pretrained_model_name
-)
-
 tokenizer = AutoTokenizer.from_pretrained(model_arguments.pretrained_model_name)
 
 dataset_dict = my_load_dataset(dataset_arguments, tokenizer)
+
+num_labels = (
+    2
+    if dataset_arguments.dataset_name == "scitail"
+    else dataset_dict["train"].features["label"].num_classes
+)
+config = AutoConfig.from_pretrained(
+    model_arguments.pretrained_model_name, num_labels=num_labels
+)
+model_init = lambda: AutoModelForSequenceClassification.from_pretrained(
+    model_arguments.pretrained_model_name, config=config
+)
 
 metric = load_metric("accuracy")
 compute_metrics = lambda eval_prediction: metric.compute(
