@@ -2,11 +2,6 @@
 
 ## PyTorch version
 
-Fine-tuning the library models for sequence classification on the GLUE
-benchmark: General Language Understanding Evaluation.
-
-GLUE is made up of a total of 9 different tasks.
-
 We get the following results on the dev set of the benchmark with the previous
 commands (with an exception for WNLI which is tiny and where we used 5 epochs
 isntead of 3). Trainings times are given for information (a single Titan RTX was
@@ -23,7 +18,7 @@ with the same final results.
 Some of these results are significantly different from the ones reported on the
 test set of GLUE benchmark on the website.
 
-I get weird results for QQP or WNLI. What gives? The train/dev split for WNLI is
+I get weird results for WNLI. What gives? The train/dev split for WNLI is
 correct, but turns out to be somewhat adversarial: when two examples contain the
 same sentence, that usually means they'll have opposite labels. The train and
 dev splits may share sentences, so if a model has overfit the training set, it

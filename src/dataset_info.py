@@ -1,6 +1,8 @@
 from dataclasses import dataclass
 from typing import Optional
 
+from datasets import ClassLabel, Features, Value, load_dataset, load_metric
+
 
 @dataclass
 class DatasetInfo:
@@ -11,6 +13,7 @@ class DatasetInfo:
     test: Optional[str] = "test"
     text: str = "premise"
     text_pair: str = "hypothesis"
+    features: Optional[Features] = None
 
 
 dataset_infos = {
@@ -23,21 +26,34 @@ dataset_infos = {
     "anli_r3": DatasetInfo(
         "anli", train="train_r3", validation="dev_r3", test="test_r3"
     ),
+    "esnli": DatasetInfo("esnli"),
+    "glue/qnli": DatasetInfo(
+        "glue", name="qnli", test=None, text="question", text_pair="sentence"
+    ),
+    "glue/rte": DatasetInfo(
+        "glue", name="rte", test=None, text="sentence1", text_pair="sentence2"
+    ),
+    "glue/wnli": DatasetInfo(
+        "glue", name="wnli", test=None, text="sentence1", text_pair="sentence2"
+    ),
     "multi_nli_matched": DatasetInfo(
         "multi_nli", validation="validation_matched", test=None
     ),
     "multi_nli_mismatched": DatasetInfo(
         "multi_nli", validation="validation_mismatched", test=None
     ),
-    "qnli": DatasetInfo(
-        "glue", name="qnli", test=None, text="question", text_pair="sentence"
+    "scitail": DatasetInfo(
+        "scitail",
+        name="tsv_format",
+        features=Features(
+            {
+                "premise": Value("string"),
+                "hypothesis": Value("string"),
+                "label": ClassLabel(names=("entails", "neutral")),
+            }
+        ),
     ),
-    "rte": DatasetInfo(
-        "glue", name="rte", test=None, text="sentence1", text_pair="sentence2"
-    ),
-    "scitail": DatasetInfo("scitail", name="tsvformat"),
     "snli": DatasetInfo("snli"),
-    "wnli": DatasetInfo(
-        "glue", name="wnli", test=None, text="sentence1", text_pair="sentence2"
-    ),
+    "super_glue/cb": DatasetInfo("super_glue", name="cb", test=None),  # TODO f1
+    "super_glue/rte": DatasetInfo("super_glue", name="rte", test=None),
 }

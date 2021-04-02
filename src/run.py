@@ -6,7 +6,7 @@ from json import dump
 from pathlib import PurePath
 from shutil import rmtree
 
-from datasets import ClassLabel, load_dataset, load_metric
+from datasets import DatasetDict, load_dataset, load_metric
 from transformers import (
     AutoModelForSequenceClassification,
     AutoTokenizer,
@@ -24,6 +24,12 @@ SEED = 42
 def parse_args():
     argument_parser = ArgumentParser()
 
+    argument_group = argument_parser.add_mutually_exclusive_group(required=True)
+    argument_group.add_argument("--do_hyperparameter_search", action="store_true")
+    argument_group.add_argument("--do_train", action="store_true")
+
+    argument_parser.add_argument("--do_predict", action="store_true")
+
     argument_group = argument_parser.add_argument_group(title="model")
     argument_group.add_argument("--pretrained_model_name_or_path", required=True)
 
@@ -39,31 +45,87 @@ def parse_args():
     argument_group.add_argument("--max_length", type=int)
 
     argument_group = argument_parser.add_argument_group(title="hyperparameter_search")
-    argument_group.add_argument("--do_hyperparameter_search", action="store_true")
     argument_group.add_argument("--n_trials", default=20, type=int)
 
     argument_group = argument_parser.add_argument_group(title="train")
-    argument_group.add_argument("--do_train", action="store_true")
-    argument_group.add_argument(
-        "--resume_from_checkpoint", action="store_const", const=True
-    )
+    argument_group.add_argument("--overwrite_output_dir", action="store_true")
     argument_group.add_argument("--per_device_train_batch_size", default=8, type=int)
     argument_group.add_argument("--per_device_eval_batch_size", default=8, type=int)
     argument_group.add_argument("--learning_rate", default=5e-5, type=float)
     argument_group.add_argument("--save_total_limit", type=int)
 
-    argument_group = argument_parser.add_argument_group(title="predict")
-    argument_group.add_argument("--do_predict", action="store_true")
-
     return argument_parser.parse_args()
+
+
+def my_load_dataset(dataset_name, tokenizer, padding="do_not_pad", max_length=None):
+    dataset_info = dataset_infos[dataset_name]
+
+    function = lambda batch: tokenizer(
+        batch[dataset_info.text],
+        text_pair=batch[dataset_info.text_pair],
+        padding=padding,
+        truncation=True,
+        max_length=max_length,
+    )
+    dataset_dict = (
+        load_dataset(
+            dataset_info.path, name=dataset_info.name, features=dataset_info.features
+        )
+        .filter(lambda example: example["label"] != -1)
+        .map(function, batched=True)
+    )
+
+    return DatasetDict(
+        {
+            "train": dataset_dict[dataset_info.train],
+            "validation": dataset_dict[dataset_info.validation],
+            "test": dataset_dict.get(dataset_info.test),
+        }
+    )
+
+
+class MyTrainer(Trainer):
+    def my_hyperparameter_search(self, n_trials=20):
+        hp_space = lambda trial: {
+            "per_device_train_batch_size": trial.suggest_categorical(
+                "per_device_train_batch_size", [4, 8, 16, 32]
+            ),
+            "learning_rate": trial.suggest_loguniform("learning_rate", 1e-6, 1e-4),
+            "num_train_epochs": trial.suggest_int("num_train_epochs", 1, 5),
+        }
+        best_run = self.hyperparameter_search(
+            hp_space=hp_space,
+            compute_objective=lambda metrics: metrics["eval_accuracy"],
+            n_trials=n_trials,
+            direction="maximize",
+        )
+        file = PurePath(self.args.output_dir).joinpath("best_run.json")
+        with open(file, mode="w") as fp:
+            dump(best_run._asdict(), fp, indent=4)
+        for run_id in range(n_trials):
+            if run_id != int(best_run.run_id):
+                rmtree(PurePath(self.args.output_dir).joinpath(f"run-{run_id}"))
+
+    def my_predict(self, test_dataset):
+        metrics = self.predict(test_dataset).metrics
+        self.save_metrics("test", metrics)
+
+    def my_train(self):
+        metrics = self.train(
+            resume_from_checkpoint=None if self.args.overwrite_output_dir else True,
+        ).metrics
+        self.save_metrics("train", metrics)
+
+        self.save_state()
+
+        metrics = self.evaluate()
+        self.save_metrics("eval", metrics)
 
 
 def main():
     set_seed(SEED)
 
     args = parse_args()
-
-    dataset_info = dataset_infos[args.dataset_name]
 
     output_dir = PurePath("tmp_trainer").joinpath(
         args.pretrained_model_name_or_path, args.dataset_name
@@ -75,7 +137,7 @@ def main():
     )
     training_arguments = TrainingArguments(
         output_dir,
-        # overwrite_output_dir=None if args.resume_from_checkpoint else True,
+        overwrite_output_dir=args.overwrite_output_dir,
         do_train=args.do_train,
         do_eval=args.do_train,
         do_predict=args.do_predict,
@@ -98,36 +160,14 @@ def main():
         if args.padding == "max_length"
         else DataCollatorWithPadding(tokenizer, pad_to_multiple_of=8)
     )
-    function = lambda batch: tokenizer(
-        batch[dataset_info.text],
-        text_pair=batch[dataset_info.text_pair],
-        padding=args.padding,
-        truncation=True,
-        max_length=args.max_length,
+
+    dataset_dict = my_load_dataset(
+        args.dataset_name, tokenizer, padding=args.padding, max_length=args.max_length
     )
-    dataset_dict = (
-        load_dataset(dataset_info.path, name=dataset_info.name)
-        .filter(lambda example: example["label"] != -1)
-        .map(function, batched=True)
-    )
-    if args.dataset_name == "scitail":
-        class_label = ClassLabel(names=("entails", "neutral"))
 
-        def function(batch):
-            batch["label"] = class_label.str2int(batch["label"])
-            return batch
-
-        dataset_dict = dataset_dict.map(function, batched=True)
-
-    # train_dataset = dataset_dict[dataset_info.train].shard(num_shards, 1)
-
-    num_labels = (
-        2
-        if args.dataset_name == "scitail"
-        else dataset_dict[dataset_info.train].features["label"].num_classes
-    )
     model_init = lambda: AutoModelForSequenceClassification.from_pretrained(
-        args.pretrained_model_name_or_path, num_labels=num_labels
+        args.pretrained_model_name_or_path,
+        num_labels=dataset_dict["train"].features["label"].num_classes,
     )
 
     metric = load_metric("accuracy")
@@ -136,50 +176,22 @@ def main():
         references=eval_prediction.label_ids,
     )
 
-    trainer = Trainer(
+    trainer = MyTrainer(
         args=training_arguments,
         data_collator=data_collator,
-        train_dataset=dataset_dict[dataset_info.train],
-        eval_dataset=dataset_dict[dataset_info.validation],
+        train_dataset=dataset_dict["train"],
+        eval_dataset=dataset_dict["validation"],
         model_init=model_init,
         compute_metrics=compute_metrics,
     )
 
     if args.do_hyperparameter_search:
-        hp_space = lambda trial: {
-            "per_device_train_batch_size": trial.suggest_categorical(
-                "per_device_train_batch_size", [4, 8, 16, 32]
-            ),
-            "learning_rate": trial.suggest_loguniform("learning_rate", 1e-6, 1e-4),
-            "num_train_epochs": trial.suggest_int("num_train_epochs", 1, 5),
-        }
-        best_run = trainer.hyperparameter_search(
-            hp_space=hp_space,
-            compute_objective=lambda metrics: metrics["eval_accuracy"],
-            n_trials=args.n_trials,
-            direction="maximize",
-        )
-        file = PurePath(trainer.args.output_dir).joinpath("best_run.json")
-        with open(file, mode="w") as fp:
-            dump(best_run._asdict(), fp, indent=4)
-        for run_id in range(args.n_trials):
-            if run_id != int(best_run.run_id):
-                rmtree(PurePath(trainer.args.output_dir).joinpath(f"run-{run_id}"))
-
-    if args.do_train:
-        metrics = trainer.train(
-            resume_from_checkpoint=args.resume_from_checkpoint
-        ).metrics
-        trainer.save_metrics("train", metrics)
-
-        trainer.save_state()
-
-        metrics = trainer.evaluate()
-        trainer.save_metrics("eval", metrics)
+        trainer.my_hyperparameter_search(n_trials=args.n_trials)
+    elif args.do_train:
+        trainer.my_train()
 
     if args.do_predict:
-        metrics = trainer.predict(dataset_dict[dataset_info.test]).metrics
-        trainer.save_metrics("test", metrics)
+        trainer.my_predict(dataset_dict["test"])
 
 
 if __name__ == "__main__":
